@@ -866,31 +866,10 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.qrcodeRender.appendChild(qrImg);
         }
 
-        // 2. Render 1D Barcode Line (JsBarcode)
-        const barcodeSvg = document.getElementById('barcode-svg');
-        if (barcodeSvg) {
-            barcodeSvg.innerHTML = '';
-            if (typeof JsBarcode !== 'undefined') {
-                try {
-                    JsBarcode("#barcode-svg", barcodeCode, {
-                        format: "CODE128",
-                        width: 1.8,
-                        height: 50,
-                        displayValue: true,
-                        fontSize: 12,
-                        lineColor: "#1a103c",
-                        background: "#ffffff",
-                        margin: 5
-                    });
-                } catch (e) {
-                    console.warn("JsBarcode error:", e);
-                }
-            } else {
-                // SVG fallback for 1D Barcode line pattern
-                barcodeSvg.setAttribute('viewBox', '0 0 200 60');
-                barcodeSvg.innerHTML = `<rect width="200" height="60" fill="#fff"/>
-                <text x="100" y="35" font-family="monospace" font-size="14" fill="#1a103c" text-anchor="middle">${barcodeCode}</text>`;
-            }
+        // 2. Display Clean Ticket Code Text
+        const ticketCodeDisplay = document.getElementById('ticket-code-display');
+        if (ticketCodeDisplay) {
+            ticketCodeDisplay.textContent = barcodeCode;
         }
 
         elements.qrResultBox.classList.remove('hidden');

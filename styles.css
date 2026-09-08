@@ -1048,21 +1048,26 @@ body {
     margin: 0 auto;
 }
 
-.barcode-render-box {
-    background: #fff;
-    padding: 10px 6px;
+.ticket-code-box {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px dashed var(--accent-gold);
+    padding: 24px 14px;
     border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    margin-top: 8px;
+    box-shadow: inset 0 0 12px rgba(255, 215, 0, 0.2);
 }
 
-#barcode-svg {
-    max-width: 100%;
-    height: auto;
+.ticket-code-text {
+    font-family: 'Fredoka', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent-gold);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
 }
 
 .qr-result-actions {
