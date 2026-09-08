@@ -47,10 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Safe UTF-8 Base64 decode
                     const jsonStr = decodeURIComponent(escape(atob(decodedB64)));
                     const obj = JSON.parse(jsonStr);
-                    if (obj.n || obj.name) res.name = obj.n || obj.name;
-                    if (obj.a || obj.age) res.age = obj.a || obj.age;
-                    if (obj.f || obj.from) res.from = obj.f || obj.from;
-                    if (obj.m || obj.msg) res.msg = obj.m || obj.msg;
+                    if (obj.n || obj.name || obj.rName || obj.ni) res.name = obj.n || obj.name || obj.rName || obj.ni;
+                    if (obj.a || obj.age || obj.rAge) res.age = obj.a || obj.age || obj.rAge;
+                    if (obj.f || obj.from || obj.sName) res.from = obj.f || obj.from || obj.sName;
+                    if (obj.m || obj.msg || obj.bMsg) res.msg = obj.m || obj.msg || obj.bMsg;
                     if (res.name || res.msg || res.from) return res;
                 } catch(e) {
                     console.warn("Base64 decode attempt failed:", e);
@@ -84,10 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Check for JSON string
             if (str.startsWith('{') && str.endsWith('}')) {
                 const obj = JSON.parse(str);
-                if (obj.name || obj.n) res.name = obj.name || obj.n;
-                if (obj.age || obj.a) res.age = obj.age || obj.a;
-                if (obj.from || obj.f) res.from = obj.from || obj.f;
-                if (obj.msg || obj.m) res.msg = obj.msg || obj.m;
+                if (obj.name || obj.n || obj.rName) res.name = obj.name || obj.n || obj.rName;
+                if (obj.age || obj.a || obj.rAge) res.age = obj.age || obj.a || obj.rAge;
+                if (obj.from || obj.f || obj.sName) res.from = obj.from || obj.f || obj.sName;
+                if (obj.msg || obj.m || obj.bMsg) res.msg = obj.msg || obj.m || obj.bMsg;
                 if (res.name || res.msg || res.from) return res;
             }
         } catch(err) {
