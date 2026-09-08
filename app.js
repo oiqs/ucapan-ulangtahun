@@ -1315,6 +1315,7 @@ document.addEventListener('DOMContentLoaded', () => {
             launchMassiveFireworks();
             triggerGoldenStarsRain();
             showToast("Memuat Kartu Ucapan Ulang Tahun! 🎁✨");
+        };
     }
 
     if (elements.btnGenerateQr) {
