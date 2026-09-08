@@ -770,14 +770,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const balloonColors = ['#ff007f', '#ffd700', '#00f0ff', '#ff69b4', '#9d4edd', '#00ff66'];
 
-    function spawnBalloons(count = 5) {
+    function spawnBalloons(count = 8) {
         for (let i = 0; i < count; i++) {
             setTimeout(() => {
                 const balloon = document.createElement('div');
                 balloon.className = 'balloon';
                 const color = balloonColors[Math.floor(Math.random() * balloonColors.length)];
                 balloon.style.background = color;
-                balloon.style.left = `${Math.random() * 85 + 5}%`;
+
+                // Distribute balloons evenly across left side, right side, and middle area on PC/Mobile
+                let leftPercent;
+                if (i % 3 === 0) {
+                    // Left side (3% - 32%)
+                    leftPercent = Math.random() * 29 + 3;
+                } else if (i % 3 === 1) {
+                    // Right side (68% - 96%)
+                    leftPercent = Math.random() * 28 + 68;
+                } else {
+                    // Middle area (33% - 67%)
+                    leftPercent = Math.random() * 34 + 33;
+                }
+
+                balloon.style.left = `${leftPercent}%`;
                 balloon.style.animationDuration = `${Math.random() * 4 + 6}s`;
 
                 balloon.addEventListener('click', (e) => {
@@ -793,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     if (balloon.parentNode) balloon.remove();
                 }, 10000);
-            }, i * 300);
+            }, i * 250);
         }
     }
 
