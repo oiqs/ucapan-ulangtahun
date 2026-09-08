@@ -90,9 +90,9 @@
 
                 <!-- Accordion/Info manual code input -->
                 <div class="manual-input-box">
-                    <span>Atau Masukkan Kode Tiket Ulang Tahun:</span>
+                    <span>Atau Masukkan Kode Tiket / Passcode / Link Ucapan:</span>
                     <div class="input-group">
-                        <input type="text" id="manual-code-input" placeholder="Contoh: HBD-2026 / HBD-SPECIAL" />
+                        <input type="text" id="manual-code-input" placeholder="Paste Kode Tiket, Passcode, atau Link..." autocomplete="off" autocorrect="off" autocapitalize="off" />
                         <button id="btn-submit-code" class="btn btn-accent"><i class="fa-solid fa-key"></i> Buka</button>
                     </div>
                 </div>
@@ -330,9 +330,12 @@
 
                     <div class="code-card">
                         <span class="code-label"><i class="fa-solid fa-ticket"></i> Kode Tiket Ultah</span>
-                        <div class="ticket-code-box">
+                        <div class="ticket-code-box" id="ticket-code-box" style="cursor: pointer;" title="Klik untuk menyalin kode tiket">
                             <span id="ticket-code-display" class="ticket-code-text">HBD-SPECIAL-2026</span>
                         </div>
+                        <button id="btn-copy-passcode" class="btn btn-outline" style="margin-top: 8px; width: 100%; font-size: 0.78rem; padding: 6px 10px;">
+                            <i class="fa-solid fa-copy"></i> Salin Passcode Kode
+                        </button>
                     </div>
                 </div>
 

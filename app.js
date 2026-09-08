@@ -42,45 +42,45 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
-    // 100% Cross-Platform UTF-8 Base64 Encoder (Supports emojis, newlines, special characters on iOS & Android)
-    function utf8ToBase64(str) {
+    // Safe UTF-8 Base64 Encoder & Decoder supporting Emojis (❤️, ✨, 🎉, 🎂), Accents & Special Characters
+    function safeUtf8ToBase64(str) {
+        if (!str) return "";
         try {
-            if (typeof TextEncoder !== 'undefined') {
-                const bytes = new TextEncoder().encode(str);
-                let bin = '';
-                for (let i = 0; i < bytes.byteLength; i++) {
-                    bin += String.fromCharCode(bytes[i]);
-                }
-                return btoa(bin);
+            const utf8Bytes = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+                return String.fromCharCode(parseInt(p1, 16));
+            });
+            return btoa(utf8Bytes);
+        } catch (e) {
+            try {
+                return btoa(unescape(encodeURIComponent(str)));
+            } catch (err) {
+                return "";
             }
-            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-                return String.fromCharCode('0x' + p1);
-            }));
-        } catch(e) {
-            return btoa(encodeURIComponent(str));
         }
     }
 
-    // 100% Cross-Platform UTF-8 Base64 Decoder (Supports emojis, newlines, special characters on iOS & Android)
-    function base64ToUtf8(str) {
+    function safeBase64ToUtf8(str) {
+        if (!str) return null;
         try {
-            const bin = atob(str);
-            if (typeof TextDecoder !== 'undefined') {
-                const bytes = new Uint8Array(bin.length);
-                for (let i = 0; i < bin.length; i++) {
-                    bytes[i] = bin.charCodeAt(i);
-                }
-                return new TextDecoder().decode(bytes);
+            let cleanB64 = str.trim().replace(/-/g, '+').replace(/_/g, '/');
+            while (cleanB64.length % 4) {
+                cleanB64 += '=';
             }
-            return decodeURIComponent(Array.prototype.map.call(bin, (c) => {
+            const binaryStr = atob(cleanB64);
+            const percentEncoded = Array.prototype.map.call(binaryStr, c => {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-        } catch(e) {
-            return decodeURIComponent(str);
+            }).join('');
+            return decodeURIComponent(percentEncoded);
+        } catch (e) {
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (err) {
+                return null;
+            }
         }
     }
 
-    // Universal & Safe Parameter Extractor (Supports Base64, short keys, long keys, JSON, raw text)
+    // Universal & Safe Parameter Extractor (Supports Base64, Passcode, URLs, JSON, raw text)
     function extractParamsFromString(rawString) {
         const res = { name: null, age: null, from: null, msg: null, created: null, exp: null, code: null };
         if (!rawString) return res;
@@ -88,33 +88,54 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const str = rawString.trim();
 
-            // 1. Check for Base64 encoded payload ?d= or ?card=
-            let b64Val = null;
-            if (str.includes('d=')) {
-                const match = str.match(/[?&]d=([^&]+)/);
-                if (match) b64Val = match[1];
-            } else if (str.includes('card=')) {
-                const match = str.match(/[?&]card=([^&]+)/);
-                if (match) b64Val = match[1];
+            function parsePayloadObj(obj) {
+                if (!obj || typeof obj !== 'object') return false;
+                let found = false;
+                if (obj.n || obj.name || obj.rName || obj.ni) { res.name = obj.n || obj.name || obj.rName || obj.ni; found = true; }
+                if (obj.a || obj.age || obj.rAge) { res.age = obj.a || obj.age || obj.rAge; found = true; }
+                if (obj.f || obj.from || obj.sName) { res.from = obj.f || obj.from || obj.sName; found = true; }
+                if (obj.m || obj.msg || obj.bMsg) { res.msg = obj.m || obj.msg || obj.bMsg; found = true; }
+                if (obj.t || obj.created) res.created = obj.t || obj.created;
+                if (obj.exp || obj.expires) res.exp = obj.exp || obj.expires;
+                if (obj.c || obj.code) res.code = obj.c || obj.code;
+                return found;
             }
 
-            if (b64Val) {
-                try {
-                    const decodedB64 = decodeURIComponent(b64Val);
-                    // Safe UTF-8 Base64 decode supporting all emojis & special characters
-                    const jsonStr = base64ToUtf8(decodedB64);
-                    const obj = JSON.parse(jsonStr);
-                    if (obj.n || obj.name || obj.rName || obj.ni) res.name = obj.n || obj.name || obj.rName || obj.ni;
-                    if (obj.a || obj.age || obj.rAge) res.age = obj.a || obj.age || obj.rAge;
-                    if (obj.f || obj.from || obj.sName) res.from = obj.f || obj.from || obj.sName;
-                    if (obj.m || obj.msg || obj.bMsg) res.msg = obj.m || obj.msg || obj.bMsg;
-                    if (obj.t || obj.created) res.created = obj.t || obj.created;
-                    if (obj.exp || obj.expires) res.exp = obj.exp || obj.expires;
-                    if (obj.c || obj.code) res.code = obj.c || obj.code;
-                    if (res.name || res.msg || res.from) return res;
-                } catch(e) {
-                    console.warn("Base64 decode attempt failed:", e);
+            // 1. Check for Base64 encoded payload in URL (?d=, ?card=) or Passcode / direct Base64
+            let b64Candidates = [];
+
+            if (str.includes('d=')) {
+                const match = str.match(/[?&]d=([^&]+)/);
+                if (match) b64Candidates.push(decodeURIComponent(match[1]));
+            }
+            if (str.includes('card=')) {
+                const match = str.match(/[?&]card=([^&]+)/);
+                if (match) b64Candidates.push(decodeURIComponent(match[1]));
+            }
+
+            // Check if str is a Passcode format like HBD-SISKA-eyJ... or HBD-eyJ...
+            if (str.toUpperCase().includes('HBD')) {
+                const parts = str.split('-');
+                for (let i = 0; i < parts.length; i++) {
+                    if (parts[i].length > 15) {
+                        b64Candidates.push(parts[i]);
+                    }
                 }
+            }
+
+            // Test if raw string itself is Base64 directly
+            if (str.length > 20 && !str.includes(' ') && !str.includes('<')) {
+                b64Candidates.push(str);
+            }
+
+            for (const b64Val of b64Candidates) {
+                try {
+                    const jsonStr = safeBase64ToUtf8(b64Val);
+                    if (jsonStr && jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
+                        const obj = JSON.parse(jsonStr);
+                        if (parsePayloadObj(obj)) return res;
+                    }
+                } catch(e) {}
             }
 
             // 2. Check for URL query params (?name=, ?n=, ?msg=, ?m=, etc.)
@@ -145,17 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.name || res.msg || res.from) return res;
 
-            // 3. Check for JSON string
+            // 3. Check for direct JSON string
             if (str.startsWith('{') && str.endsWith('}')) {
                 const obj = JSON.parse(str);
-                if (obj.name || obj.n || obj.rName) res.name = obj.name || obj.n || obj.rName;
-                if (obj.age || obj.a || obj.rAge) res.age = obj.age || obj.a || obj.rAge;
-                if (obj.from || obj.f || obj.sName) res.from = obj.from || obj.f || obj.sName;
-                if (obj.msg || obj.m || obj.bMsg) res.msg = obj.msg || obj.m || obj.bMsg;
-                if (obj.t || obj.created) res.created = obj.t || obj.created;
-                if (obj.exp || obj.expires) res.exp = obj.exp || obj.expires;
-                if (obj.c || obj.code) res.code = obj.c || obj.code;
-                if (res.name || res.msg || res.from) return res;
+                if (parsePayloadObj(obj)) return res;
             }
         } catch(err) {
             console.warn("extractParamsFromString exception handled:", err);
@@ -184,10 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 exp: expTime,
                 c: barcodeCode
             });
-            const b64 = utf8ToBase64(jsonPayload);
+            const b64 = safeUtf8ToBase64(jsonPayload);
             return baseUrl + `?d=${encodeURIComponent(b64)}`;
         } catch(e) {
-            // Fallback to short parameter keys
             return baseUrl + `?n=${encodeURIComponent(rName)}&a=${encodeURIComponent(rAge)}&f=${encodeURIComponent(sName)}&m=${encodeURIComponent(bMsg)}&exp=${expTime}&c=${encodeURIComponent(barcodeCode)}`;
         }
     }
@@ -296,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function switchScreen(targetScreenName) {
         if (targetScreenName === 'greeting') {
             resetCandlesToLit();
+            applyStateToGreeting();
         }
         if (targetScreenName === 'unboxing') {
             isUnboxingTriggered = false;
@@ -894,15 +908,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Manual Code Input
-    elements.btnSubmitCode.addEventListener('click', () => {
-        const code = elements.manualCodeInput.value.trim();
-        if (code) {
-            playSoundScanSuccess();
-            processScannedData(code);
-        } else {
-            showToast("Harap masukkan kode barcode!");
-        }
-    });
+    if (elements.manualCodeInput) {
+        ['keypress', 'keydown'].forEach(evtType => {
+            elements.manualCodeInput.addEventListener(evtType, (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (elements.btnSubmitCode) elements.btnSubmitCode.click();
+                }
+            });
+        });
+    }
+
+    if (elements.btnSubmitCode) {
+        elements.btnSubmitCode.addEventListener('click', () => {
+            const code = elements.manualCodeInput.value.trim();
+            if (code) {
+                playSoundScanSuccess();
+                processScannedData(code);
+            } else {
+                showToast("Harap masukkan kode tiket, passcode, atau link ucapan!");
+            }
+        });
+    }
 
     // Expired Screen Action Buttons
     const btnCreateNewFromExpired = document.getElementById('btn-create-new-from-expired');
@@ -1253,6 +1280,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const createdTime = Date.now();
         const expTime = createdTime + THIRTY_DAYS_MS;
 
+        // Build self-contained compact passcode payload
+        const jsonPayload = JSON.stringify({
+            n: rName,
+            a: rAge,
+            f: sName,
+            m: bMsg,
+            t: createdTime,
+            exp: expTime,
+            c: barcodeCode
+        });
+        const b64Payload = safeUtf8ToBase64(jsonPayload);
+        const cleanNamePart = rName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6) || 'CARD';
+        const fullPasscode = `HBD-${cleanNamePart}-${b64Payload}`;
+
         try {
             const cardData = { rName, rAge, sName, bMsg, code: barcodeCode, created: createdTime, exp: expTime };
             localStorage.setItem('lastCreatedCard', JSON.stringify(cardData));
@@ -1261,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const codeMap = JSON.parse(localStorage.getItem('cardCodeMap') || '{}');
             codeMap[barcodeCode.toUpperCase()] = cardData;
             codeMap[barcodeCode.toUpperCase().replace(/-/g, '')] = cardData;
+            codeMap[fullPasscode.toUpperCase()] = cardData;
             localStorage.setItem('cardCodeMap', JSON.stringify(codeMap));
         } catch(e){}
 
@@ -1314,11 +1356,39 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 100);
 
-        // Attach action events for generated link
+        // Attach action events for generated link & passcodes
         const btnDownloadQr = document.getElementById('btn-download-qr');
         if (btnDownloadQr) {
             btnDownloadQr.onclick = () => {
                 downloadQrCodeImage(rName);
+            };
+        }
+
+        const btnCopyPasscode = document.getElementById('btn-copy-passcode');
+        if (btnCopyPasscode) {
+            btnCopyPasscode.onclick = () => {
+                const textToCopy = fullPasscode;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showToast("Passcode Kode Tiket berhasil disalin! 📋");
+                    }).catch(() => fallbackCopyText(textToCopy));
+                } else {
+                    fallbackCopyText(textToCopy);
+                }
+            };
+        }
+
+        const ticketCodeBox = document.getElementById('ticket-code-box');
+        if (ticketCodeBox) {
+            ticketCodeBox.onclick = () => {
+                const textToCopy = barcodeCode;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showToast(`Kode Tiket (${barcodeCode}) disalin! 📋`);
+                    }).catch(() => fallbackCopyText(textToCopy));
+                } else {
+                    fallbackCopyText(textToCopy);
+                }
             };
         }
 
