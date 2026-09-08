@@ -418,18 +418,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 7. BARCODE / QR SCANNER ENGINE
     // ==========================================
+    let currentCameraFacingMode = "environment"; // Default: Kamera Belakang (rear camera)
+    let html5QrCodeEngineInstance = null;
+
     function initScanner() {
-        try {
-            if (typeof Html5QrcodeScanner !== 'undefined') {
-                state.html5QrCode = new Html5QrcodeScanner(
-                    "reader",
-                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
-                    /* verbose= */ false
-                );
-                state.html5QrCode.render(onScanSuccess, onScanFailure);
-            }
-        } catch (e) {
-            console.log("Scanner camera init fallback:", e);
+        startCameraScanner(currentCameraFacingMode);
+
+        // Camera Switch Button Handler (Depan <-> Belakang)
+        const btnSwitchCamera = document.getElementById('btn-switch-camera');
+        if (btnSwitchCamera) {
+            ['click', 'touchstart'].forEach(evt => {
+                btnSwitchCamera.addEventListener(evt, (e) => {
+                    if (evt === 'touchstart') e.preventDefault();
+                    toggleCameraFacingMode();
+                }, { passive: false });
+            });
         }
 
         // Dedicated Barcode/QR File Upload Handler
@@ -441,15 +444,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Membaca gambar barcode... 🔍");
 
                     if (typeof Html5Qrcode !== 'undefined') {
-                        const html5QrCodeEngine = new Html5Qrcode("reader");
-                        html5QrCodeEngine.scanFile(file, true)
+                        const fileEngine = new Html5Qrcode("reader");
+                        fileEngine.scanFile(file, true)
                             .then(decodedText => {
                                 playSoundScanSuccess();
                                 processScannedData(decodedText);
                             })
                             .catch(err => {
                                 console.warn("Scan file primary failed:", err);
-                                // Fallback scan: if file name or image metadata has HBD info
                                 const filename = file.name.toUpperCase();
                                 if (filename.includes('HBD') || filename.includes('QR')) {
                                     playSoundScanSuccess();
@@ -462,6 +464,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    }
+
+    function startCameraScanner(facingMode) {
+        if (typeof Html5Qrcode === 'undefined') return;
+
+        if (html5QrCodeEngineInstance && html5QrCodeEngineInstance.isScanning) {
+            html5QrCodeEngineInstance.stop().then(() => {
+                launchCameraEngine(facingMode);
+            }).catch(err => {
+                console.log("Stop camera error:", err);
+                launchCameraEngine(facingMode);
+            });
+        } else {
+            launchCameraEngine(facingMode);
+        }
+    }
+
+    function launchCameraEngine(facingMode) {
+        try {
+            html5QrCodeEngineInstance = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+            html5QrCodeEngineInstance.start(
+                { facingMode: facingMode },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.log(`Failed camera facingMode: ${facingMode}, trying fallback:`, err);
+                // Fallback camera
+                html5QrCodeEngineInstance.start(
+                    { facingMode: "user" },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                ).catch(e => console.log("Camera fallback failed:", e));
+            });
+        } catch(e) {
+            console.log("Launch camera exception:", e);
+        }
+    }
+
+    function toggleCameraFacingMode() {
+        currentCameraFacingMode = (currentCameraFacingMode === "environment") ? "user" : "environment";
+        const label = (currentCameraFacingMode === "environment") ? "Belakang" : "Depan";
+        showToast(`Beralih ke Kamera ${label}... 📷`);
+        startCameraScanner(currentCameraFacingMode);
     }
 
     function onScanSuccess(decodedText, decodedResult) {
