@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.btnBlowCandle.addEventListener('click', extinguishCandles);
 
-    // Microphone Blow Listener with High-Sensitivity Wind & Peak Detection (With 650ms Finger Tap Grace Period)
+    // Microphone Blow Listener with Pure Frequency Volume Detector (With 600ms Grace Period)
     elements.btnMicBlow.addEventListener('click', async () => {
         if (!state.candlesLit) return;
         getAudioContext();
@@ -713,61 +713,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const ctx = getAudioContext();
             const source = ctx.createMediaStreamSource(stream);
             const analyser = ctx.createAnalyser();
-            analyser.fftSize = 512;
+            analyser.fftSize = 256;
             source.connect(analyser);
 
             elements.btnMicBlow.innerHTML = `<i class="fa-solid fa-wind fa-spin"></i> Mendengarkan Tiupan... (Tiup ke Mic!)`;
             elements.btnMicBlow.classList.add('glow-btn');
             showToast("Silakan tiup ke dekat mikrofon HP/Laptop-mu sekarang! 🌬️🎂");
 
-            const timeDomainData = new Uint8Array(analyser.fftSize);
-            const freqData = new Uint8Array(analyser.frequencyBinCount);
-            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
             const micStartTime = Date.now();
-            let blowFrameCount = 0;
 
             function checkBlowVolume() {
                 if (!state.candlesLit) return;
 
-                // 650ms Grace Period: Ignore audio immediately after button click to skip finger tap sound
-                if (Date.now() - micStartTime < 650) {
+                // Grace Period (600ms): ignore tap click sound when button is pressed
+                if (Date.now() - micStartTime < 600) {
                     state.micAnimationId = requestAnimationFrame(checkBlowVolume);
                     return;
                 }
 
-                analyser.getByteTimeDomainData(timeDomainData);
-                analyser.getByteFrequencyData(freqData);
+                analyser.getByteFrequencyData(dataArray);
 
-                // 1. Calculate peak time-domain amplitude excursion from 128
-                let maxPeak = 0;
-                for (let i = 0; i < timeDomainData.length; i++) {
-                    const peak = Math.abs(timeDomainData[i] - 128);
-                    if (peak > maxPeak) maxPeak = peak;
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
                 }
+                const average = sum / dataArray.length;
 
-                // 2. Low-frequency wind noise energy (first 15 frequency bins)
-                let lowFreqSum = 0;
-                const lowFreqBins = Math.min(15, freqData.length);
-                for (let i = 0; i < lowFreqBins; i++) {
-                    lowFreqSum += freqData[i];
-                }
-                const lowFreqAvg = lowFreqSum / lowFreqBins;
-
-                // Sustained blow condition: Requires 2 consecutive frames of blowing noise
-                if (maxPeak > 32 || lowFreqAvg > 38) {
-                    blowFrameCount++;
-                    if (blowFrameCount >= 2) {
-                        extinguishCandles();
-                        if (state.micStream) {
-                            state.micStream.getTracks().forEach(track => track.stop());
-                        }
-                        if (state.micAnimationId) {
-                            cancelAnimationFrame(state.micAnimationId);
-                        }
-                        return;
+                // Simple & sensitive blow volume detection threshold
+                if (average > 38) {
+                    extinguishCandles();
+                    if (state.micStream) {
+                        state.micStream.getTracks().forEach(track => track.stop());
                     }
-                } else {
-                    blowFrameCount = Math.max(0, blowFrameCount - 1);
+                    if (state.micAnimationId) {
+                        cancelAnimationFrame(state.micAnimationId);
+                    }
+                    return;
                 }
 
                 state.micAnimationId = requestAnimationFrame(checkBlowVolume);
