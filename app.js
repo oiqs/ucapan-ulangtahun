@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper: Build ultra-compact, ultra-reliable Base64 shareable URL for QR Code with 30-Day Expiration Timestamp
     function generateCompactShareUrl(rName, rAge, sName, bMsg, barcodeCode) {
         let baseUrl = window.location.origin + window.location.pathname;
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if (!window.location.hostname.includes('vercel.app')) {
             baseUrl = 'https://ucapan-ulangtahun.vercel.app/';
         }
 
@@ -840,21 +840,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         extractedName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
                     }
 
-                    // Check lastCreatedCard fallback
+                    // Check lastCreatedCard fallback ONLY if the code matches
                     const saved = localStorage.getItem('lastCreatedCard');
                     if (saved) {
                         try {
                             const card = JSON.parse(saved);
-                            if (isCardExpired(card.exp, card.created)) {
-                                switchScreen('expired');
-                                showToast("Kode Tiket ini telah kedaluwarsa (berlaku 1 bulan).");
-                                return;
+                            const upperClean = cleanStr.toUpperCase().replace(/-/g, '');
+                            const upperCardCode = (card.code || '').toUpperCase().replace(/-/g, '');
+                            
+                            if (upperCardCode && upperClean.includes(upperCardCode)) {
+                                if (isCardExpired(card.exp, card.created)) {
+                                    switchScreen('expired');
+                                    showToast("Kode Tiket ini telah kedaluwarsa (berlaku 1 bulan).");
+                                    return;
+                                }
+                                if (card.rName) state.recipientName = card.rName;
+                                if (card.rAge) state.recipientAge = card.rAge;
+                                if (card.sName) state.senderName = card.sName;
+                                if (card.bMsg) state.birthdayMessage = card.bMsg;
+                                hasCustomParams = true;
                             }
-                            if (card.rName) state.recipientName = card.rName;
-                            if (card.rAge) state.recipientAge = card.rAge;
-                            if (card.sName) state.senderName = card.sName;
-                            if (card.bMsg) state.birthdayMessage = card.bMsg;
-                            hasCustomParams = true;
                         } catch(e){}
                     }
 
