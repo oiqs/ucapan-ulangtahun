@@ -139,6 +139,33 @@
 
 
         <!-- ========================================== -->
+        <!-- SCREEN 4: EXPIRED CARD WARNING -->
+        <!-- ========================================== -->
+        <section id="screen-expired" class="screen hidden">
+            <div class="glass-card expired-card" style="text-align: center; max-width: 480px; margin: 0 auto; padding: 36px 24px;">
+                <div class="expired-icon" style="font-size: 3.5rem; color: #ff4757; margin-bottom: 16px;">
+                    <i class="fa-solid fa-hourglass-end fa-bounce"></i>
+                </div>
+                <h2 class="glow-title" style="color: #ff4757; font-size: 1.8rem; margin-bottom: 10px;">Kode / Barcode Kedaluwarsa!</h2>
+                <p style="color: #f1efff; font-size: 0.98rem; line-height: 1.6; margin-bottom: 20px;">
+                    Maaf, kartu ucapan ulang tahun ini sudah melewati batas masa aktif <strong>1 bulan (30 hari)</strong> sejak dibuat.
+                </p>
+                <div class="expired-info-box" style="background: rgba(255, 71, 87, 0.1); border: 1px dashed #ff4757; padding: 12px; border-radius: 12px; font-size: 0.88rem; color: #ffbe76; margin-bottom: 24px;">
+                    <i class="fa-solid fa-circle-info"></i> Barcode & Kode Tiket hanya berlaku selama 30 hari untuk menjaga keamanan & keunikan data.
+                </div>
+                <div class="expired-btn-group" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-create-new-from-expired" class="btn btn-primary glow-btn">
+                        <i class="fa-solid fa-plus-circle"></i> Buat Barcode Ucapan Baru
+                    </button>
+                    <button id="btn-back-scan-expired" class="btn btn-outline">
+                        <i class="fa-solid fa-qrcode"></i> Pindai Kode Lain
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
         <!-- SCREEN 3: MAIN BIRTHDAY STAGE & CELEBRATION-->
         <!-- ========================================== -->
         <section id="screen-greeting" class="screen hidden">

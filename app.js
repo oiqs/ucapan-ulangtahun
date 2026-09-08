@@ -21,11 +21,30 @@ document.addEventListener('DOMContentLoaded', () => {
         html5QrCode: null
     };
 
-    let isDirectScanUrl = false;
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // 30 Days in milliseconds
+
+    // Generate 100% Unique Ticket Code to prevent code collisions (e.g. HBD-SISKA-8492)
+    function generateUniqueBarcodeCode(recipientName) {
+        const cleanName = recipientName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8) || "CARD";
+        const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+        return `HBD-${cleanName}-${randomCode}`;
+    }
+
+    // Expiration Verifier: Check if timestamp is older than 30 days
+    function isCardExpired(expTimestamp, createdTimestamp) {
+        const now = Date.now();
+        if (expTimestamp && now > expTimestamp) {
+            return true;
+        }
+        if (createdTimestamp && (now - createdTimestamp) > THIRTY_DAYS_MS) {
+            return true;
+        }
+        return false;
+    }
 
     // Universal & Safe Parameter Extractor (Supports Base64, short keys, long keys, JSON, raw text)
     function extractParamsFromString(rawString) {
-        const res = { name: null, age: null, from: null, msg: null };
+        const res = { name: null, age: null, from: null, msg: null, created: null, exp: null, code: null };
         if (!rawString) return res;
 
         try {
@@ -51,6 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (obj.a || obj.age || obj.rAge) res.age = obj.a || obj.age || obj.rAge;
                     if (obj.f || obj.from || obj.sName) res.from = obj.f || obj.from || obj.sName;
                     if (obj.m || obj.msg || obj.bMsg) res.msg = obj.m || obj.msg || obj.bMsg;
+                    if (obj.t || obj.created) res.created = obj.t || obj.created;
+                    if (obj.exp || obj.expires) res.exp = obj.exp || obj.expires;
+                    if (obj.c || obj.code) res.code = obj.c || obj.code;
                     if (res.name || res.msg || res.from) return res;
                 } catch(e) {
                     console.warn("Base64 decode attempt failed:", e);
@@ -79,6 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (params.has('msg') && params.get('msg')) res.msg = params.get('msg');
             else if (params.has('m') && params.get('m')) res.msg = params.get('m');
 
+            if (params.has('exp') && params.get('exp')) res.exp = parseInt(params.get('exp'), 10);
+            if (params.has('t') && params.get('t')) res.created = parseInt(params.get('t'), 10);
+            if (params.has('code') && params.get('code')) res.code = params.get('code');
+
             if (res.name || res.msg || res.from) return res;
 
             // 3. Check for JSON string
@@ -88,6 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (obj.age || obj.a || obj.rAge) res.age = obj.age || obj.a || obj.rAge;
                 if (obj.from || obj.f || obj.sName) res.from = obj.from || obj.f || obj.sName;
                 if (obj.msg || obj.m || obj.bMsg) res.msg = obj.msg || obj.m || obj.bMsg;
+                if (obj.t || obj.created) res.created = obj.t || obj.created;
+                if (obj.exp || obj.expires) res.exp = obj.exp || obj.expires;
+                if (obj.c || obj.code) res.code = obj.c || obj.code;
                 if (res.name || res.msg || res.from) return res;
             }
         } catch(err) {
@@ -97,22 +126,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return res;
     }
 
-    // Helper: Build ultra-compact, ultra-reliable Base64 shareable URL for QR Code
-    function generateCompactShareUrl(rName, rAge, sName, bMsg) {
+    // Helper: Build ultra-compact, ultra-reliable Base64 shareable URL for QR Code with 30-Day Expiration Timestamp
+    function generateCompactShareUrl(rName, rAge, sName, bMsg, barcodeCode) {
         let baseUrl = window.location.origin + window.location.pathname;
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             baseUrl = 'https://ucapan-ulangtahun.vercel.app/';
         }
 
+        const now = Date.now();
+        const expTime = now + THIRTY_DAYS_MS;
+
         try {
-            const jsonPayload = JSON.stringify({ n: rName, a: rAge, f: sName, m: bMsg });
+            const jsonPayload = JSON.stringify({
+                n: rName,
+                a: rAge,
+                f: sName,
+                m: bMsg,
+                t: now,
+                exp: expTime,
+                c: barcodeCode
+            });
             const b64 = btoa(unescape(encodeURIComponent(jsonPayload)));
             return baseUrl + `?d=${encodeURIComponent(b64)}`;
         } catch(e) {
             // Fallback to short parameter keys
-            return baseUrl + `?n=${encodeURIComponent(rName)}&a=${encodeURIComponent(rAge)}&f=${encodeURIComponent(sName)}&m=${encodeURIComponent(bMsg)}`;
+            return baseUrl + `?n=${encodeURIComponent(rName)}&a=${encodeURIComponent(rAge)}&f=${encodeURIComponent(sName)}&m=${encodeURIComponent(bMsg)}&exp=${expTime}&c=${encodeURIComponent(barcodeCode)}`;
         }
     }
+
+    let isCardExpiredOnLoad = false;
 
     // Parse URL Parameters on initial page load safely
     function parseUrlParams() {
@@ -120,6 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const fullUrl = window.location.href;
             const extracted = extractParamsFromString(fullUrl);
             if (extracted.name || extracted.msg || extracted.from) {
+                // Check 30-day expiration
+                if (isCardExpired(extracted.exp, extracted.created)) {
+                    isCardExpiredOnLoad = true;
+                    return;
+                }
                 isDirectScanUrl = true;
                 if (extracted.name) state.recipientName = extracted.name;
                 if (extracted.age) state.recipientAge = extracted.age;
@@ -138,7 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const screens = {
         scanner: document.getElementById('screen-scanner'),
         unboxing: document.getElementById('screen-unboxing'),
-        greeting: document.getElementById('screen-greeting')
+        greeting: document.getElementById('screen-greeting'),
+        expired: document.getElementById('screen-expired')
     };
 
     const elements = {
@@ -697,6 +745,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Try URL / Base64 parameter extraction
             const extracted = extractParamsFromString(cleanStr);
             if (extracted.name || extracted.msg || extracted.from) {
+                // Check 30-day expiration
+                if (isCardExpired(extracted.exp, extracted.created)) {
+                    switchScreen('expired');
+                    showToast("Maaf, Kode / Barcode ini telah kedaluwarsa (berlaku 1 bulan).");
+                    return;
+                }
                 if (extracted.name) state.recipientName = extracted.name;
                 if (extracted.age) state.recipientAge = extracted.age;
                 if (extracted.from) state.senderName = extracted.from;
@@ -711,6 +765,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const storedCard = codeMap[upperCode] || codeMap[noDashCode];
                     if (storedCard) {
+                        // Check 30-day expiration
+                        if (isCardExpired(storedCard.exp, storedCard.created)) {
+                            switchScreen('expired');
+                            showToast("Maaf, Kode Tiket ini telah kedaluwarsa (berlaku 1 bulan).");
+                            return;
+                        }
                         if (storedCard.rName) state.recipientName = storedCard.rName;
                         if (storedCard.rAge) state.recipientAge = storedCard.rAge;
                         if (storedCard.sName) state.senderName = storedCard.sName;
@@ -719,9 +779,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch(e){}
 
-                // 3. Check if cleanStr is a Ticket Code format like HBD-NAME-YEAR or HBD-SPECIAL
+                // 3. Check if cleanStr is a Ticket Code format like HBD-NAME-ID
                 if (!hasCustomParams && (cleanStr.toUpperCase().startsWith('HBD') || cleanStr.toUpperCase().includes('HBD'))) {
-                    // Try parsing recipient name from code (e.g. HBD-SISKA-2026 -> Siska)
                     const parts = cleanStr.split('-');
                     let extractedName = null;
                     if (parts.length >= 2 && parts[1].length > 1) {
@@ -733,6 +792,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (saved) {
                         try {
                             const card = JSON.parse(saved);
+                            if (isCardExpired(card.exp, card.created)) {
+                                switchScreen('expired');
+                                showToast("Kode Tiket ini telah kedaluwarsa (berlaku 1 bulan).");
+                                return;
+                            }
                             if (card.rName) state.recipientName = card.rName;
                             if (card.rAge) state.recipientAge = card.rAge;
                             if (card.sName) state.senderName = card.sName;
@@ -764,6 +828,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (saved) {
                 try {
                     const card = JSON.parse(saved);
+                    if (isCardExpired(card.exp, card.created)) {
+                        switchScreen('expired');
+                        showToast("Kartu ucapan ini sudah kedaluwarsa.");
+                        return;
+                    }
                     if (card.rName) state.recipientName = card.rName;
                     if (card.rAge) state.recipientAge = card.rAge;
                     if (card.sName) state.senderName = card.sName;
@@ -796,10 +865,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Expired Screen Action Buttons
+    const btnCreateNewFromExpired = document.getElementById('btn-create-new-from-expired');
+    if (btnCreateNewFromExpired) {
+        btnCreateNewFromExpired.addEventListener('click', () => {
+            switchScreen('scanner');
+            openQrModal();
+        });
+    }
+
+    const btnBackScanExpired = document.getElementById('btn-back-scan-expired');
+    if (btnBackScanExpired) {
+        btnBackScanExpired.addEventListener('click', () => {
+            switchScreen('scanner');
+        });
+    }
+
     initScanner();
 
-    // Auto-switch directly to greeting screen if URL contains barcode parameters (?name=...)
-    if (isDirectScanUrl) {
+    // Auto-switch directly on load
+    if (isCardExpiredOnLoad) {
+        switchScreen('expired');
+        showToast("Maaf, Kode / Barcode ini sudah kedaluwarsa (berlaku 1 bulan).");
+    } else if (isDirectScanUrl) {
         switchScreen('greeting');
         setTimeout(() => {
             startBirthdayMelody();
@@ -1120,12 +1208,14 @@ document.addEventListener('DOMContentLoaded', () => {
         state.senderName = sName;
         state.birthdayMessage = bMsg;
 
-        // Code text for 1D Barcode (e.g. HBD-SISKA-2026)
-        const cleanNameCode = rName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) || "SPECIAL";
-        const barcodeCode = `HBD-${cleanNameCode}-2026`;
+        // Code text for 1D Barcode with 100% Unique Random Suffix (e.g. HBD-SISKA-8492)
+        const barcodeCode = generateUniqueBarcodeCode(rName);
+
+        const createdTime = Date.now();
+        const expTime = createdTime + THIRTY_DAYS_MS;
 
         try {
-            const cardData = { rName, rAge, sName, bMsg, code: barcodeCode };
+            const cardData = { rName, rAge, sName, bMsg, code: barcodeCode, created: createdTime, exp: expTime };
             localStorage.setItem('lastCreatedCard', JSON.stringify(cardData));
 
             // Save in cardCodeMap dictionary for manual ticket code entry lookup
@@ -1135,8 +1225,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('cardCodeMap', JSON.stringify(codeMap));
         } catch(e){}
 
-        // Build Compact Shareable Link for 2D QR Code (Fast scanning, low-density QR matrix)
-        const fullShareUrl = generateCompactShareUrl(rName, rAge, sName, bMsg);
+        // Build Compact Shareable Link for 2D QR Code with 30-Day Expiration Timestamp
+        const fullShareUrl = generateCompactShareUrl(rName, rAge, sName, bMsg, barcodeCode);
 
         // 1. Render High Definition 2D QR Code
         elements.qrcodeRender.innerHTML = '';
