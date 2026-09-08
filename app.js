@@ -778,6 +778,13 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("Barcode & QR Code berhasil dibuat! 🎉");
 
         // Attach action events for generated link
+        const btnDownloadQr = document.getElementById('btn-download-qr');
+        if (btnDownloadQr) {
+            btnDownloadQr.onclick = () => {
+                downloadQrCodeImage(rName);
+            };
+        }
+
         elements.btnCopyLink.onclick = () => {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(fullShareUrl).then(() => {
@@ -811,6 +818,52 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast("Memuat Kartu Ucapan Hasil Scan Barcode/QR! 🎁");
         };
     });
+
+    // Download QR Code Image Function
+    function downloadQrCodeImage(recipientName) {
+        const qrContainer = elements.qrcodeRender;
+        const canvasEl = qrContainer.querySelector('canvas');
+        const imgEl = qrContainer.querySelector('img');
+        const safeName = recipientName.replace(/[^a-zA-Z0-9]/g, '_') || 'Ucapan';
+        const fileName = `QR_Ultah_${safeName}.png`;
+
+        if (canvasEl) {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvasEl.toDataURL('image/png');
+            link.click();
+            showToast("Gambar QR Code berhasil diunduh! 📥");
+        } else if (imgEl) {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = function() {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.naturalWidth || 200;
+                tempCanvas.height = img.naturalHeight || 200;
+                const ctx = tempCanvas.getContext('2d');
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                ctx.drawImage(img, 0, 0);
+
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = tempCanvas.toDataURL('image/png');
+                link.click();
+                showToast("Gambar QR Code berhasil diunduh! 📥");
+            };
+            img.onerror = function() {
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = imgEl.src;
+                link.target = "_blank";
+                link.click();
+                showToast("Mengunduh gambar QR Code... 📥");
+            };
+            img.src = imgEl.src;
+        } else {
+            showToast("Gambar QR Code tidak ditemukan.");
+        }
+    }
 
 
     // ==========================================
