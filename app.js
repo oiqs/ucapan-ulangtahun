@@ -22,16 +22,113 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let isDirectScanUrl = false;
-    // Parse URL Parameters if available (e.g. ?name=Siska&msg=...&from=Budi)
-    function parseUrlParams() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('name') || urlParams.has('msg') || urlParams.has('from')) {
-            isDirectScanUrl = true;
+
+    // Universal & Safe Parameter Extractor (Supports Base64, short keys, long keys, JSON, raw text)
+    function extractParamsFromString(rawString) {
+        const res = { name: null, age: null, from: null, msg: null };
+        if (!rawString) return res;
+
+        try {
+            const str = rawString.trim();
+
+            // 1. Check for Base64 encoded payload ?d= or ?card=
+            let b64Val = null;
+            if (str.includes('d=')) {
+                const match = str.match(/[?&]d=([^&]+)/);
+                if (match) b64Val = match[1];
+            } else if (str.includes('card=')) {
+                const match = str.match(/[?&]card=([^&]+)/);
+                if (match) b64Val = match[1];
+            }
+
+            if (b64Val) {
+                try {
+                    const decodedB64 = decodeURIComponent(b64Val);
+                    // Safe UTF-8 Base64 decode
+                    const jsonStr = decodeURIComponent(escape(atob(decodedB64)));
+                    const obj = JSON.parse(jsonStr);
+                    if (obj.n || obj.name) res.name = obj.n || obj.name;
+                    if (obj.a || obj.age) res.age = obj.a || obj.age;
+                    if (obj.f || obj.from) res.from = obj.f || obj.from;
+                    if (obj.m || obj.msg) res.msg = obj.m || obj.msg;
+                    if (res.name || res.msg || res.from) return res;
+                } catch(e) {
+                    console.warn("Base64 decode attempt failed:", e);
+                }
+            }
+
+            // 2. Check for URL query params (?name=, ?n=, ?msg=, ?m=, etc.)
+            let searchString = str;
+            if (str.includes('?')) {
+                searchString = str.substring(str.indexOf('?'));
+            } else if (!str.startsWith('?')) {
+                searchString = '?' + str;
+            }
+
+            const params = new URLSearchParams(searchString);
+
+            if (params.has('name') && params.get('name')) res.name = params.get('name');
+            else if (params.has('n') && params.get('n')) res.name = params.get('n');
+
+            if (params.has('age') && params.get('age')) res.age = params.get('age');
+            else if (params.has('a') && params.get('a')) res.age = params.get('a');
+
+            if (params.has('from') && params.get('from')) res.from = params.get('from');
+            else if (params.has('f') && params.get('f')) res.from = params.get('f');
+
+            if (params.has('msg') && params.get('msg')) res.msg = params.get('msg');
+            else if (params.has('m') && params.get('m')) res.msg = params.get('m');
+
+            if (res.name || res.msg || res.from) return res;
+
+            // 3. Check for JSON string
+            if (str.startsWith('{') && str.endsWith('}')) {
+                const obj = JSON.parse(str);
+                if (obj.name || obj.n) res.name = obj.name || obj.n;
+                if (obj.age || obj.a) res.age = obj.age || obj.a;
+                if (obj.from || obj.f) res.from = obj.from || obj.f;
+                if (obj.msg || obj.m) res.msg = obj.msg || obj.m;
+                if (res.name || res.msg || res.from) return res;
+            }
+        } catch(err) {
+            console.warn("extractParamsFromString exception handled:", err);
         }
-        if (urlParams.has('name')) state.recipientName = urlParams.get('name');
-        if (urlParams.has('age')) state.recipientAge = urlParams.get('age');
-        if (urlParams.has('from')) state.senderName = urlParams.get('from');
-        if (urlParams.has('msg')) state.birthdayMessage = urlParams.get('msg');
+
+        return res;
+    }
+
+    // Helper: Build ultra-compact, ultra-reliable Base64 shareable URL for QR Code
+    function generateCompactShareUrl(rName, rAge, sName, bMsg) {
+        let baseUrl = window.location.origin + window.location.pathname;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            baseUrl = 'https://ucapan-ulangtahun.vercel.app/';
+        }
+
+        try {
+            const jsonPayload = JSON.stringify({ n: rName, a: rAge, f: sName, m: bMsg });
+            const b64 = btoa(unescape(encodeURIComponent(jsonPayload)));
+            return baseUrl + `?d=${encodeURIComponent(b64)}`;
+        } catch(e) {
+            // Fallback to short parameter keys
+            return baseUrl + `?n=${encodeURIComponent(rName)}&a=${encodeURIComponent(rAge)}&f=${encodeURIComponent(sName)}&m=${encodeURIComponent(bMsg)}`;
+        }
+    }
+
+    // Parse URL Parameters on initial page load safely
+    function parseUrlParams() {
+        try {
+            const fullUrl = window.location.href;
+            const extracted = extractParamsFromString(fullUrl);
+            if (extracted.name || extracted.msg || extracted.from) {
+                isDirectScanUrl = true;
+                if (extracted.name) state.recipientName = extracted.name;
+                if (extracted.age) state.recipientAge = extracted.age;
+                if (extracted.from) state.senderName = extracted.from;
+                if (extracted.msg) state.birthdayMessage = extracted.msg;
+            }
+        } catch(e) {
+            console.error("parseUrlParams exception:", e);
+        }
     }
     parseUrlParams();
 
@@ -594,45 +691,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let hasCustomParams = false;
 
-        if (dataString && (dataString.includes('name=') || dataString.includes('msg=') || dataString.includes('from='))) {
-            try {
-                let searchString = dataString;
-                if (dataString.includes('?')) {
-                    searchString = dataString.substring(dataString.indexOf('?'));
-                } else if (!dataString.startsWith('?')) {
-                    searchString = '?' + dataString;
-                }
-                const params = new URLSearchParams(searchString);
-                if (params.has('name') && params.get('name')) {
-                    state.recipientName = params.get('name');
-                    hasCustomParams = true;
-                }
-                if (params.has('age') && params.get('age')) {
-                    state.recipientAge = params.get('age');
-                    hasCustomParams = true;
-                }
-                if (params.has('from') && params.get('from')) {
-                    state.senderName = params.get('from');
-                    hasCustomParams = true;
-                }
-                if (params.has('msg') && params.get('msg')) {
-                    state.birthdayMessage = params.get('msg');
-                    hasCustomParams = true;
-                }
-            } catch(e) {
-                console.error("URL Params parse error:", e);
+        if (dataString) {
+            const extracted = extractParamsFromString(dataString);
+            if (extracted.name || extracted.msg || extracted.from) {
+                if (extracted.name) state.recipientName = extracted.name;
+                if (extracted.age) state.recipientAge = extracted.age;
+                if (extracted.from) state.senderName = extracted.from;
+                if (extracted.msg) state.birthdayMessage = extracted.msg;
+                hasCustomParams = true;
+            } else if (!dataString.startsWith('http') && !dataString.includes('?') && dataString.length > 3) {
+                // Scanned raw text card
+                state.birthdayMessage = dataString;
+                hasCustomParams = true;
             }
-        }
-
-        // Support JSON encoded data string e.g. {"name":"Siska","msg":"..."}
-        if (!hasCustomParams && dataString && dataString.startsWith('{') && dataString.endsWith('}')) {
-            try {
-                const obj = JSON.parse(dataString);
-                if (obj.name || obj.rName) { state.recipientName = obj.name || obj.rName; hasCustomParams = true; }
-                if (obj.age || obj.rAge) { state.recipientAge = obj.age || obj.rAge; hasCustomParams = true; }
-                if (obj.from || obj.sName) { state.senderName = obj.from || obj.sName; hasCustomParams = true; }
-                if (obj.msg || obj.bMsg) { state.birthdayMessage = obj.msg || obj.bMsg; hasCustomParams = true; }
-            } catch(e){}
         }
 
         // Fallback: If no parameters in scanned string, retrieve last created card from localStorage
@@ -1001,13 +1072,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('lastCreatedCard', JSON.stringify({ rName, rAge, sName, bMsg }));
         } catch(e){}
 
-        // Build Custom Shareable Link for 2D QR Code (Auto-target Vercel live domain if on localhost)
-        let baseUrl = window.location.origin + window.location.pathname;
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            baseUrl = 'https://ucapan-ulangtahun.vercel.app/';
-        }
-        const query = `?name=${encodeURIComponent(rName)}&age=${encodeURIComponent(rAge)}&from=${encodeURIComponent(sName)}&msg=${encodeURIComponent(bMsg)}`;
-        const fullShareUrl = baseUrl + query;
+        // Build Compact Shareable Link for 2D QR Code (Fast scanning, low-density QR matrix)
+        const fullShareUrl = generateCompactShareUrl(rName, rAge, sName, bMsg);
 
         // Code text for 1D Barcode (e.g. HBD-SISKA-2026)
         const cleanNameCode = rName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) || "SPECIAL";
