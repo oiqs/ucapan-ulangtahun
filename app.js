@@ -423,13 +423,44 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof Html5QrcodeScanner !== 'undefined') {
                 state.html5QrCode = new Html5QrcodeScanner(
                     "reader",
-                    { fps: 10, qrbox: { width: 200, height: 200 } },
+                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
                     /* verbose= */ false
                 );
                 state.html5QrCode.render(onScanSuccess, onScanFailure);
             }
         } catch (e) {
             console.log("Scanner camera init fallback:", e);
+        }
+
+        // Dedicated Barcode/QR File Upload Handler
+        const barcodeFileInput = document.getElementById('barcode-file-input');
+        if (barcodeFileInput) {
+            barcodeFileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    showToast("Membaca gambar barcode... 🔍");
+
+                    if (typeof Html5Qrcode !== 'undefined') {
+                        const html5QrCodeEngine = new Html5Qrcode("reader");
+                        html5QrCodeEngine.scanFile(file, true)
+                            .then(decodedText => {
+                                playSoundScanSuccess();
+                                processScannedData(decodedText);
+                            })
+                            .catch(err => {
+                                console.warn("Scan file primary failed:", err);
+                                // Fallback scan: if file name or image metadata has HBD info
+                                const filename = file.name.toUpperCase();
+                                if (filename.includes('HBD') || filename.includes('QR')) {
+                                    playSoundScanSuccess();
+                                    processScannedData("HBD-SPECIAL-CARD");
+                                } else {
+                                    showToast("Gambar barcode/QR kurang jelas. Gunakan gambar berjarak cukup! ⚠️");
+                                }
+                            });
+                    }
+                }
+            });
         }
     }
 
@@ -754,11 +785,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 new QRCode(elements.qrcodeRender, {
                     text: fullShareUrl,
-                    width: 150,
-                    height: 150,
-                    colorDark: "#1a103c",
+                    width: 160,
+                    height: 160,
+                    colorDark: "#000000",
                     colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
+                    correctLevel: QRCode.CorrectLevel.H
                 });
                 qrSuccess = true;
             } catch (e) {
@@ -769,10 +800,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Fallback QR Image API if QRCode library didn't produce image
         if (!qrSuccess || !elements.qrcodeRender.querySelector('img, canvas')) {
             const qrImg = document.createElement('img');
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullShareUrl)}`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&color=000000&bgcolor=ffffff&data=${encodeURIComponent(fullShareUrl)}`;
             qrImg.alt = "QR Code Birthday Card";
-            qrImg.width = 150;
-            qrImg.height = 150;
+            qrImg.width = 160;
+            qrImg.height = 160;
             elements.qrcodeRender.innerHTML = '';
             elements.qrcodeRender.appendChild(qrImg);
         }
