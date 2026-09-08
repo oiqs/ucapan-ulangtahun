@@ -481,12 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 600);
     }
 
-    // Quick Demo Scan
-    elements.btnQuickDemo.addEventListener('click', () => {
-        playSoundScanSuccess();
-        processScannedData("HBD-DEMO-SPECIAL");
-    });
-
     // Manual Code Input
     elements.btnSubmitCode.addEventListener('click', () => {
         const code = elements.manualCodeInput.value.trim();
