@@ -528,13 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try { state.html5QrCode.clear(); } catch(e){}
         }
 
-        // Always reset unboxing animation trigger & close lid for the new scanned card
-        isUnboxingTriggered = false;
-        if (elements.giftBoxTrigger) {
-            elements.giftBoxTrigger.classList.remove('opened');
-        }
-
-        elements.scanStatus.innerHTML = `<i class="fa-solid fa-check-circle" style="color:#00ff66"></i> Kode Terdeteksi! Membuka kejutan...`;
+        elements.scanStatus.innerHTML = `<i class="fa-solid fa-check-circle" style="color:#00ff66"></i> Kode Terdeteksi! Membuka panggung ucapan...`;
 
         // Check if data is URL with parameters
         if (dataString.includes('name=') || dataString.includes('msg=')) {
@@ -556,9 +550,14 @@ document.addEventListener('DOMContentLoaded', () => {
         applyStateToGreeting();
 
         setTimeout(() => {
-            switchScreen('unboxing');
-            showToast("Kode Berhasil Diverifikasi! 🎁");
-        }, 600);
+            switchScreen('greeting');
+            startBirthdayMelody();
+            startTypingMessage();
+            spawnBalloons(8);
+            launchMassiveFireworks();
+            triggerGoldenStarsRain();
+            showToast("Selamat Ulang Tahun! 🎉✨");
+        }, 400);
     }
 
     // Manual Code Input
@@ -574,9 +573,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initScanner();
 
-    // Auto-switch to unboxing screen if URL contains barcode parameters (?name=...)
+    // Auto-switch directly to greeting screen if URL contains barcode parameters (?name=...)
     if (isDirectScanUrl) {
-        switchScreen('unboxing');
+        switchScreen('greeting');
+        setTimeout(() => {
+            startBirthdayMelody();
+            startTypingMessage();
+            spawnBalloons(8);
+            launchMassiveFireworks();
+            triggerGoldenStarsRain();
+        }, 500);
     }
 
 
@@ -927,8 +933,13 @@ document.addEventListener('DOMContentLoaded', () => {
             state.senderName = sName;
             state.birthdayMessage = bMsg;
             applyStateToGreeting();
-            switchScreen('unboxing');
-            showToast("Memuat Kartu Ucapan Hasil Scan Barcode/QR! 🎁");
+            switchScreen('greeting');
+            startBirthdayMelody();
+            startTypingMessage();
+            spawnBalloons(8);
+            launchMassiveFireworks();
+            triggerGoldenStarsRain();
+            showToast("Memuat Kartu Ucapan Ulang Tahun! 🎁✨");
         };
     });
 
