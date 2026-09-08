@@ -91,6 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. NAVIGATION & SCREEN SWITCHING
     // ==========================================
     function switchScreen(targetScreenName) {
+        if (targetScreenName === 'unboxing') {
+            isUnboxingTriggered = false;
+            if (elements.giftBoxTrigger) {
+                elements.giftBoxTrigger.classList.remove('opened');
+            }
+        }
         Object.keys(screens).forEach(key => {
             if (key === targetScreenName) {
                 screens[key].classList.remove('hidden');
@@ -443,6 +449,12 @@ document.addEventListener('DOMContentLoaded', () => {
             try { state.html5QrCode.clear(); } catch(e){}
         }
 
+        // Always reset unboxing animation trigger & close lid for the new scanned card
+        isUnboxingTriggered = false;
+        if (elements.giftBoxTrigger) {
+            elements.giftBoxTrigger.classList.remove('opened');
+        }
+
         elements.scanStatus.innerHTML = `<i class="fa-solid fa-check-circle" style="color:#00ff66"></i> Kode Terdeteksi! Membuka kejutan...`;
 
         // Check if data is URL with parameters
@@ -455,6 +467,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (params.has('from')) state.senderName = params.get('from');
                 if (params.has('msg')) state.birthdayMessage = params.get('msg');
             } catch(e){}
+        } else if (dataString.startsWith('HBD-')) {
+            const parts = dataString.split('-');
+            if (parts.length >= 2 && parts[1]) {
+                state.recipientName = parts[1];
+            }
         }
 
         applyStateToGreeting();
@@ -462,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             switchScreen('unboxing');
             showToast("Kode Berhasil Diverifikasi! 🎁");
-        }, 800);
+        }, 600);
     }
 
     // Quick Demo Scan
