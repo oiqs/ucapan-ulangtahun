@@ -692,17 +692,69 @@ document.addEventListener('DOMContentLoaded', () => {
         let hasCustomParams = false;
 
         if (dataString) {
-            const extracted = extractParamsFromString(dataString);
+            const cleanStr = dataString.trim();
+
+            // 1. Try URL / Base64 parameter extraction
+            const extracted = extractParamsFromString(cleanStr);
             if (extracted.name || extracted.msg || extracted.from) {
                 if (extracted.name) state.recipientName = extracted.name;
                 if (extracted.age) state.recipientAge = extracted.age;
                 if (extracted.from) state.senderName = extracted.from;
                 if (extracted.msg) state.birthdayMessage = extracted.msg;
                 hasCustomParams = true;
-            } else if (!dataString.startsWith('http') && !dataString.includes('?') && dataString.length > 3) {
-                // Scanned raw text card
-                state.birthdayMessage = dataString;
-                hasCustomParams = true;
+            } else {
+                // 2. Check if cleanStr matches a stored ticket code in cardCodeMap
+                try {
+                    const codeMap = JSON.parse(localStorage.getItem('cardCodeMap') || '{}');
+                    const upperCode = cleanStr.toUpperCase();
+                    const noDashCode = upperCode.replace(/-/g, '');
+
+                    const storedCard = codeMap[upperCode] || codeMap[noDashCode];
+                    if (storedCard) {
+                        if (storedCard.rName) state.recipientName = storedCard.rName;
+                        if (storedCard.rAge) state.recipientAge = storedCard.rAge;
+                        if (storedCard.sName) state.senderName = storedCard.sName;
+                        if (storedCard.bMsg) state.birthdayMessage = storedCard.bMsg;
+                        hasCustomParams = true;
+                    }
+                } catch(e){}
+
+                // 3. Check if cleanStr is a Ticket Code format like HBD-NAME-YEAR or HBD-SPECIAL
+                if (!hasCustomParams && (cleanStr.toUpperCase().startsWith('HBD') || cleanStr.toUpperCase().includes('HBD'))) {
+                    // Try parsing recipient name from code (e.g. HBD-SISKA-2026 -> Siska)
+                    const parts = cleanStr.split('-');
+                    let extractedName = null;
+                    if (parts.length >= 2 && parts[1].length > 1) {
+                        extractedName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+                    }
+
+                    // Check lastCreatedCard fallback
+                    const saved = localStorage.getItem('lastCreatedCard');
+                    if (saved) {
+                        try {
+                            const card = JSON.parse(saved);
+                            if (card.rName) state.recipientName = card.rName;
+                            if (card.rAge) state.recipientAge = card.rAge;
+                            if (card.sName) state.senderName = card.sName;
+                            if (card.bMsg) state.birthdayMessage = card.bMsg;
+                            hasCustomParams = true;
+                        } catch(e){}
+                    }
+
+                    if (!hasCustomParams && extractedName) {
+                        state.recipientName = extractedName;
+                        state.recipientAge = "Spesial Hari Bahagiamu ✨";
+                        state.senderName = "Seseorang yang Peduli ❤️";
+                        state.birthdayMessage = `Selamat ulang tahun ${extractedName}! Semoga di usiamu yang baru ini selalu dilimpahi kesehatan, kebahagiaan, kedamaian, dan keberkahan. Semoga semua impian dan cita-citamu tercapai dengan indah! Tetaplah tersenyum dan menginspirasi!`;
+                        hasCustomParams = true;
+                    }
+                }
+
+                // 4. Raw sentence/message input (if not a ticket code starting with HBD)
+                if (!hasCustomParams && !cleanStr.startsWith('http') && !cleanStr.includes('?') && !cleanStr.toUpperCase().startsWith('HBD') && cleanStr.length > 5) {
+                    state.birthdayMessage = cleanStr;
+                    hasCustomParams = true;
+                }
             }
         }
 
@@ -1068,16 +1120,23 @@ document.addEventListener('DOMContentLoaded', () => {
         state.senderName = sName;
         state.birthdayMessage = bMsg;
 
+        // Code text for 1D Barcode (e.g. HBD-SISKA-2026)
+        const cleanNameCode = rName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) || "SPECIAL";
+        const barcodeCode = `HBD-${cleanNameCode}-2026`;
+
         try {
-            localStorage.setItem('lastCreatedCard', JSON.stringify({ rName, rAge, sName, bMsg }));
+            const cardData = { rName, rAge, sName, bMsg, code: barcodeCode };
+            localStorage.setItem('lastCreatedCard', JSON.stringify(cardData));
+
+            // Save in cardCodeMap dictionary for manual ticket code entry lookup
+            const codeMap = JSON.parse(localStorage.getItem('cardCodeMap') || '{}');
+            codeMap[barcodeCode.toUpperCase()] = cardData;
+            codeMap[barcodeCode.toUpperCase().replace(/-/g, '')] = cardData;
+            localStorage.setItem('cardCodeMap', JSON.stringify(codeMap));
         } catch(e){}
 
         // Build Compact Shareable Link for 2D QR Code (Fast scanning, low-density QR matrix)
         const fullShareUrl = generateCompactShareUrl(rName, rAge, sName, bMsg);
-
-        // Code text for 1D Barcode (e.g. HBD-SISKA-2026)
-        const cleanNameCode = rName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) || "SPECIAL";
-        const barcodeCode = `HBD-${cleanNameCode}-2026`;
 
         // 1. Render High Definition 2D QR Code
         elements.qrcodeRender.innerHTML = '';
