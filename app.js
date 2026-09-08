@@ -681,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.btnBlowCandle.addEventListener('click', extinguishCandles);
 
-    // Microphone Blow Listener
+    // Microphone Blow Listener with High-Sensitivity Wind & Peak Detection
     elements.btnMicBlow.addEventListener('click', async () => {
         getAudioContext();
         try {
@@ -690,29 +690,46 @@ document.addEventListener('DOMContentLoaded', () => {
             const ctx = getAudioContext();
             const source = ctx.createMediaStreamSource(stream);
             const analyser = ctx.createAnalyser();
-            analyser.fftSize = 256;
+            analyser.fftSize = 512;
             source.connect(analyser);
 
-            elements.btnMicBlow.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mendengarkan Tiupan...`;
-            showToast("Silakan tiup ke dekat mikrofon HP/Laptop-mu! 🌬️");
+            elements.btnMicBlow.innerHTML = `<i class="fa-solid fa-wind fa-spin"></i> Mendengarkan Tiupan... (Tiup ke Mic!)`;
+            elements.btnMicBlow.classList.add('glow-btn');
+            showToast("Silakan tiup ke dekat mikrofon HP/Laptop-mu sekarang! 🌬️🎂");
 
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const timeDomainData = new Uint8Array(analyser.fftSize);
+            const freqData = new Uint8Array(analyser.frequencyBinCount);
 
             function checkBlowVolume() {
                 if (!state.candlesLit) return;
-                analyser.getByteFrequencyData(dataArray);
-                
-                // Calculate average volume intensity
-                let sum = 0;
-                for (let i = 0; i < dataArray.length; i++) {
-                    sum += dataArray[i];
-                }
-                const average = sum / dataArray.length;
 
-                if (average > 55) { // Threshold for blow sound
+                analyser.getByteTimeDomainData(timeDomainData);
+                analyser.getByteFrequencyData(freqData);
+
+                // 1. Calculate peak time-domain amplitude excursion from 128
+                let maxPeak = 0;
+                for (let i = 0; i < timeDomainData.length; i++) {
+                    const peak = Math.abs(timeDomainData[i] - 128);
+                    if (peak > maxPeak) maxPeak = peak;
+                }
+
+                // 2. Low-frequency wind noise energy (first 15 frequency bins)
+                let lowFreqSum = 0;
+                const lowFreqBins = Math.min(15, freqData.length);
+                for (let i = 0; i < lowFreqBins; i++) {
+                    lowFreqSum += freqData[i];
+                }
+                const lowFreqAvg = lowFreqSum / lowFreqBins;
+
+                // Sensitive blow condition
+                if (maxPeak > 24 || lowFreqAvg > 30) {
                     extinguishCandles();
-                    // Stop mic stream
-                    stream.getTracks().forEach(track => track.stop());
+                    if (state.micStream) {
+                        state.micStream.getTracks().forEach(track => track.stop());
+                    }
+                    if (state.micAnimationId) {
+                        cancelAnimationFrame(state.micAnimationId);
+                    }
                 } else {
                     state.micAnimationId = requestAnimationFrame(checkBlowVolume);
                 }
@@ -721,8 +738,9 @@ document.addEventListener('DOMContentLoaded', () => {
             checkBlowVolume();
 
         } catch (err) {
-            console.error("Mic access denied:", err);
-            showToast("Akses mikrofon ditolak. Gunakan tombol 'Tiup Lilin' saja! 😊");
+            console.error("Mic access denied or error:", err);
+            elements.btnMicBlow.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> Mic Tidak Aktif`;
+            showToast("Akses mikrofon ditolak/tidak tersedia. Gunakan tombol 'Tiup Lilin' saja! 😊");
         }
     });
 
