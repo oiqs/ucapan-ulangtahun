@@ -42,6 +42,44 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
+    // 100% Cross-Platform UTF-8 Base64 Encoder (Supports emojis, newlines, special characters on iOS & Android)
+    function utf8ToBase64(str) {
+        try {
+            if (typeof TextEncoder !== 'undefined') {
+                const bytes = new TextEncoder().encode(str);
+                let bin = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    bin += String.fromCharCode(bytes[i]);
+                }
+                return btoa(bin);
+            }
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+                return String.fromCharCode('0x' + p1);
+            }));
+        } catch(e) {
+            return btoa(encodeURIComponent(str));
+        }
+    }
+
+    // 100% Cross-Platform UTF-8 Base64 Decoder (Supports emojis, newlines, special characters on iOS & Android)
+    function base64ToUtf8(str) {
+        try {
+            const bin = atob(str);
+            if (typeof TextDecoder !== 'undefined') {
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) {
+                    bytes[i] = bin.charCodeAt(i);
+                }
+                return new TextDecoder().decode(bytes);
+            }
+            return decodeURIComponent(Array.prototype.map.call(bin, (c) => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        } catch(e) {
+            return decodeURIComponent(str);
+        }
+    }
+
     // Universal & Safe Parameter Extractor (Supports Base64, short keys, long keys, JSON, raw text)
     function extractParamsFromString(rawString) {
         const res = { name: null, age: null, from: null, msg: null, created: null, exp: null, code: null };
@@ -63,8 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (b64Val) {
                 try {
                     const decodedB64 = decodeURIComponent(b64Val);
-                    // Safe UTF-8 Base64 decode
-                    const jsonStr = decodeURIComponent(escape(atob(decodedB64)));
+                    // Safe UTF-8 Base64 decode supporting all emojis & special characters
+                    const jsonStr = base64ToUtf8(decodedB64);
                     const obj = JSON.parse(jsonStr);
                     if (obj.n || obj.name || obj.rName || obj.ni) res.name = obj.n || obj.name || obj.rName || obj.ni;
                     if (obj.a || obj.age || obj.rAge) res.age = obj.a || obj.age || obj.rAge;
@@ -146,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 exp: expTime,
                 c: barcodeCode
             });
-            const b64 = btoa(unescape(encodeURIComponent(jsonPayload)));
+            const b64 = utf8ToBase64(jsonPayload);
             return baseUrl + `?d=${encodeURIComponent(b64)}`;
         } catch(e) {
             // Fallback to short parameter keys
