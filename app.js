@@ -678,6 +678,36 @@ document.addEventListener('DOMContentLoaded', () => {
         typeChar();
     }
 
+    // Copy Message Text Button Handler
+    const btnCopyMessage = document.getElementById('btn-copy-message');
+    if (btnCopyMessage) {
+        ['click', 'touchstart'].forEach(evt => {
+            btnCopyMessage.addEventListener(evt, (e) => {
+                if (evt === 'touchstart') e.preventDefault();
+                const msgToCopy = state.birthdayMessage || (elements.typedMessage ? elements.typedMessage.textContent : '');
+                if (msgToCopy) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(msgToCopy).then(() => {
+                            showToast("Pesan & Doa berhasil disalin ke clipboard! 📋");
+                        }).catch(() => fallbackCopyMsgText(msgToCopy));
+                    } else {
+                        fallbackCopyMsgText(msgToCopy);
+                    }
+                }
+            }, { passive: false });
+        });
+    }
+
+    function fallbackCopyMsgText(text) {
+        const tempTextArea = document.createElement("textarea");
+        tempTextArea.value = text;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempTextArea);
+        showToast("Pesan & Doa disalin! 📋");
+    }
+
 
     // ==========================================
     // 10. CANDLE BLOWING & MIC DETECTOR

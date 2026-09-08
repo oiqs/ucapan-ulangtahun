@@ -210,9 +210,14 @@
 
                 <!-- Animated Message Card -->
                 <div class="glass-card message-card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-envelope-open-text heart-icon"></i>
-                        <span>Pesan & Doa Spesial</span>
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-envelope-open-text heart-icon"></i>
+                            <span>Pesan & Doa Spesial</span>
+                        </div>
+                        <button id="btn-copy-message" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.82rem; border-radius: 50px;">
+                            <i class="fa-solid fa-copy"></i> Salin Teks
+                        </button>
                     </div>
 
                     <div class="message-content">
