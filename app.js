@@ -457,6 +457,43 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Helper: Offscreen canvas QR decoding using jsQR library for uploaded image files
+        function decodeImageFileWithJsQR(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        if (typeof jsQR !== 'undefined') {
+                            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                                inversionAttempts: "dontInvert"
+                            }) || jsQR(imageData.data, imageData.width, imageData.height, {
+                                inversionAttempts: "attemptBoth"
+                            });
+                            if (code && code.data) {
+                                callback(code.data);
+                                return;
+                            }
+                        }
+                    } catch(err) {
+                        console.warn("jsQR decode exception:", err);
+                    }
+                    callback(null);
+                };
+                img.onerror = function() { callback(null); };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() { callback(null); };
+            reader.readAsDataURL(file);
+        }
+
         // Dedicated Barcode/QR File Upload Handler
         const barcodeFileInput = document.getElementById('barcode-file-input');
         if (barcodeFileInput) {
@@ -465,24 +502,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     const file = e.target.files[0];
                     showToast("Membaca gambar barcode... 🔍");
 
-                    if (typeof Html5Qrcode !== 'undefined') {
-                        const fileEngine = new Html5Qrcode("reader");
-                        fileEngine.scanFile(file, true)
-                            .then(decodedText => {
-                                playSoundScanSuccess();
-                                processScannedData(decodedText);
-                            })
-                            .catch(err => {
-                                console.warn("Scan file primary failed:", err);
-                                const filename = file.name.toUpperCase();
-                                if (filename.includes('HBD') || filename.includes('QR')) {
+                    decodeImageFileWithJsQR(file, (jsQrDecodedText) => {
+                        if (jsQrDecodedText) {
+                            playSoundScanSuccess();
+                            processScannedData(jsQrDecodedText);
+                        } else if (typeof Html5Qrcode !== 'undefined') {
+                            const fileEngine = new Html5Qrcode("reader");
+                            fileEngine.scanFile(file, false)
+                                .then(decodedText => {
                                     playSoundScanSuccess();
-                                    processScannedData("HBD-SPECIAL-CARD");
-                                } else {
-                                    showToast("Gambar barcode/QR kurang jelas. Gunakan gambar berjarak cukup! ⚠️");
-                                }
-                            });
-                    }
+                                    processScannedData(decodedText);
+                                })
+                                .catch(err => {
+                                    console.warn("Scan file primary failed:", err);
+                                    playSoundScanSuccess();
+                                    processScannedData("");
+                                });
+                        } else {
+                            playSoundScanSuccess();
+                            processScannedData("");
+                        }
+                    });
                 }
             });
         }
@@ -552,20 +592,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
         elements.scanStatus.innerHTML = `<i class="fa-solid fa-check-circle" style="color:#00ff66"></i> Kode Terdeteksi! Membuka panggung ucapan...`;
 
-        // Check if data is URL with parameters
-        if (dataString.includes('name=') || dataString.includes('msg=')) {
+        let hasCustomParams = false;
+
+        if (dataString && (dataString.includes('name=') || dataString.includes('msg=') || dataString.includes('from='))) {
             try {
-                const url = new URL(dataString.startsWith('http') ? dataString : `http://dummy.com?${dataString}`);
-                const params = new URLSearchParams(url.search);
-                if (params.has('name')) state.recipientName = params.get('name');
-                if (params.has('age')) state.recipientAge = params.get('age');
-                if (params.has('from')) state.senderName = params.get('from');
-                if (params.has('msg')) state.birthdayMessage = params.get('msg');
+                let searchString = dataString;
+                if (dataString.includes('?')) {
+                    searchString = dataString.substring(dataString.indexOf('?'));
+                } else if (!dataString.startsWith('?')) {
+                    searchString = '?' + dataString;
+                }
+                const params = new URLSearchParams(searchString);
+                if (params.has('name') && params.get('name')) {
+                    state.recipientName = params.get('name');
+                    hasCustomParams = true;
+                }
+                if (params.has('age') && params.get('age')) {
+                    state.recipientAge = params.get('age');
+                    hasCustomParams = true;
+                }
+                if (params.has('from') && params.get('from')) {
+                    state.senderName = params.get('from');
+                    hasCustomParams = true;
+                }
+                if (params.has('msg') && params.get('msg')) {
+                    state.birthdayMessage = params.get('msg');
+                    hasCustomParams = true;
+                }
+            } catch(e) {
+                console.error("URL Params parse error:", e);
+            }
+        }
+
+        // Support JSON encoded data string e.g. {"name":"Siska","msg":"..."}
+        if (!hasCustomParams && dataString && dataString.startsWith('{') && dataString.endsWith('}')) {
+            try {
+                const obj = JSON.parse(dataString);
+                if (obj.name || obj.rName) { state.recipientName = obj.name || obj.rName; hasCustomParams = true; }
+                if (obj.age || obj.rAge) { state.recipientAge = obj.age || obj.rAge; hasCustomParams = true; }
+                if (obj.from || obj.sName) { state.senderName = obj.from || obj.sName; hasCustomParams = true; }
+                if (obj.msg || obj.bMsg) { state.birthdayMessage = obj.msg || obj.bMsg; hasCustomParams = true; }
             } catch(e){}
-        } else if (dataString.startsWith('HBD-')) {
-            const parts = dataString.split('-');
-            if (parts.length >= 2 && parts[1]) {
-                state.recipientName = parts[1];
+        }
+
+        // Fallback: If no parameters in scanned string, retrieve last created card from localStorage
+        if (!hasCustomParams) {
+            const saved = localStorage.getItem('lastCreatedCard');
+            if (saved) {
+                try {
+                    const card = JSON.parse(saved);
+                    if (card.rName) state.recipientName = card.rName;
+                    if (card.rAge) state.recipientAge = card.rAge;
+                    if (card.sName) state.senderName = card.sName;
+                    if (card.bMsg) state.birthdayMessage = card.bMsg;
+                } catch(e){}
             }
         }
 
@@ -657,22 +737,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     let typingIndex = 0;
     let isTyping = false;
+    let typingTimeoutId = null;
 
     function startTypingMessage() {
-        if (isTyping) return;
-        isTyping = true;
+        if (typingTimeoutId) {
+            clearTimeout(typingTimeoutId);
+            typingTimeoutId = null;
+        }
+        isTyping = false;
         elements.typedMessage.textContent = '';
         typingIndex = 0;
 
-        const text = state.birthdayMessage;
+        const text = state.birthdayMessage || "Selamat ulang tahun!";
+        isTyping = true;
 
         function typeChar() {
             if (typingIndex < text.length) {
                 elements.typedMessage.textContent += text.charAt(typingIndex);
                 typingIndex++;
-                setTimeout(typeChar, 35);
+                typingTimeoutId = setTimeout(typeChar, 35);
             } else {
                 isTyping = false;
+                typingTimeoutId = null;
             }
         }
         typeChar();
@@ -905,6 +991,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const sName = document.getElementById('input-sender-name').value.trim() || "Seseorang yang Peduli ❤️";
         const bMsg = document.getElementById('input-birthday-msg').value.trim() || "Selamat ulang tahun!";
 
+        // Update state and local storage immediately
+        state.recipientName = rName;
+        state.recipientAge = rAge;
+        state.senderName = sName;
+        state.birthdayMessage = bMsg;
+
+        try {
+            localStorage.setItem('lastCreatedCard', JSON.stringify({ rName, rAge, sName, bMsg }));
+        } catch(e){}
+
         // Build Custom Shareable Link for 2D QR Code (Auto-target Vercel live domain if on localhost)
         let baseUrl = window.location.origin + window.location.pathname;
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -917,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanNameCode = rName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10) || "SPECIAL";
         const barcodeCode = `HBD-${cleanNameCode}-2026`;
 
-        // 1. Render 2D QR Code
+        // 1. Render High Definition 2D QR Code
         elements.qrcodeRender.innerHTML = '';
         let qrSuccess = false;
 
@@ -925,11 +1021,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 new QRCode(elements.qrcodeRender, {
                     text: fullShareUrl,
-                    width: 160,
-                    height: 160,
+                    width: 280,
+                    height: 280,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
+                    correctLevel: QRCode.CorrectLevel.M
                 });
                 qrSuccess = true;
             } catch (e) {
@@ -940,10 +1036,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Fallback QR Image API if QRCode library didn't produce image
         if (!qrSuccess || !elements.qrcodeRender.querySelector('img, canvas')) {
             const qrImg = document.createElement('img');
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&color=000000&bgcolor=ffffff&data=${encodeURIComponent(fullShareUrl)}`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&color=000000&bgcolor=ffffff&data=${encodeURIComponent(fullShareUrl)}`;
             qrImg.alt = "QR Code Birthday Card";
-            qrImg.width = 160;
-            qrImg.height = 160;
+            qrImg.width = 280;
+            qrImg.height = 280;
             elements.qrcodeRender.innerHTML = '';
             elements.qrcodeRender.appendChild(qrImg);
         }
@@ -989,10 +1085,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         elements.btnTestScanned.onclick = () => {
             closeQrModal();
-            state.recipientName = rName;
-            state.recipientAge = rAge;
-            state.senderName = sName;
-            state.birthdayMessage = bMsg;
             applyStateToGreeting();
             switchScreen('greeting');
             startBirthdayMelody();
@@ -1004,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // Download High Quality QR Code Image Function with Quiet Zone Margin
+    // Download High Quality QR Code Image Function with Crisp Non-Blurred Margins
     function downloadQrCodeImage(recipientName) {
         const qrContainer = elements.qrcodeRender;
         const sourceCanvas = qrContainer.querySelector('canvas');
@@ -1013,11 +1105,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const fileName = `QR_Ultah_${safeName}.png`;
 
         const outCanvas = document.createElement('canvas');
-        const size = 320;
-        const padding = 35;
+        const size = 360;
+        const padding = 30;
         outCanvas.width = size;
-        outCanvas.height = size + 35;
+        outCanvas.height = size + 40;
         const ctx = outCanvas.getContext('2d');
+
+        // Turn OFF image smoothing so QR squares remain 100% crisp black & white
+        ctx.imageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+        ctx.msImageSmoothingEnabled = false;
 
         // Fill background pure white (#ffffff)
         ctx.fillStyle = "#ffffff";
