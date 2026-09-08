@@ -155,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let isCardExpiredOnLoad = false;
+    let isDirectScanUrl = false;
 
     // Parse URL Parameters on initial page load safely
     function parseUrlParams() {
