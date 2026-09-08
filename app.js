@@ -370,7 +370,6 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.btnTriggerFireworks.addEventListener('click', () => {
         launchMassiveFireworks();
         triggerConfettiBurst();
-        showToast("Pesta Kembang Api Diluncurkan! 🎆");
     });
 
 
@@ -682,7 +681,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.btnSpawnBalloons.addEventListener('click', () => {
         spawnBalloons(6);
-        showToast("Balon warna-warni ditambahkan! Letuskan balonnya! 🎈");
     });
 
 
