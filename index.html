@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kartu Ucapan Selamat Ulang Tahun Interaktif</title>
+    <meta name="description" content="Kartu Ucapan Selamat Ulang Tahun Interaktif dengan Scan Barcode, Kue Ultah 3D, Lilin Interaktif, Kembang Api & Musik">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&family=Sacramento&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome / CDN dependencies -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- External Libraries -->
+    <!-- HTML5 QR Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- QRCode.js library for generating QR codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- JsBarcode library for generating 1D Barcodes -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Background Canvas for Fireworks & Starfield -->
+    <canvas id="fireworks-canvas"></canvas>
+
+    <!-- Ambient Audio Player Control (Floating) -->
+    <div class="audio-control-floating hidden" id="audio-control-btn">
+        <button id="toggle-music-btn" title="Putar/Hentikan Musik">
+            <i class="fa-solid fa-music"></i>
+            <span class="music-waves">
+                <span></span><span></span><span></span>
+            </span>
+        </button>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="app-container">
+
+        <!-- ========================================== -->
+        <!-- SCREEN 1: BARCODE & QR SCANNER / HUB -->
+        <!-- ========================================== -->
+        <section id="screen-scanner" class="screen active">
+            <div class="glass-card scanner-card">
+                <div class="badge-tag"><i class="fa-solid fa-qrcode"></i> Special Birthday Access</div>
+                
+                <h1 class="glow-title">Pindai Kode Barcode</h1>
+                <p class="subtitle">Arahkan kamera ke Barcode / QR Code khusus ucapan ulang tahun untuk membuka kejutan istimewa! 🎁✨</p>
+
+                <!-- Camera / Scanner Container -->
+                <div class="scanner-wrapper">
+                    <div id="reader" class="qr-reader-container"></div>
+                    <div class="scanner-frame-overlay">
+                        <div class="laser-beam"></div>
+                        <div class="corner top-left"></div>
+                        <div class="corner top-right"></div>
+                        <div class="corner bottom-left"></div>
+                        <div class="corner bottom-right"></div>
+                    </div>
+                </div>
+
+                <div id="scan-status" class="scan-status">
+                    <i class="fa-solid fa-camera"></i> Siap memindai... Pasang QR/Barcode di dalam kotak
+                </div>
+
+                <!-- Scanner Helper Actions -->
+                <div class="scanner-actions">
+                    <button id="btn-quick-demo" class="btn btn-primary glow-btn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Buka Ucapan (Demo Scan)
+                    </button>
+                    
+                    <button id="btn-create-qr" class="btn btn-secondary">
+                        <i class="fa-solid fa-plus-circle"></i> Buat Barcode/QR Sendiri
+                    </button>
+                </div>
+
+                <!-- Accordion/Info manual code input -->
+                <div class="manual-input-box">
+                    <span>Atau Masukkan Kode Tiket Ulang Tahun:</span>
+                    <div class="input-group">
+                        <input type="text" id="manual-code-input" placeholder="Contoh: HBD-2026 / HBD-SPECIAL" />
+                        <button id="btn-submit-code" class="btn btn-accent"><i class="fa-solid fa-key"></i> Buka</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- SCREEN 2: ANIMATED UNBOXING & ENVELOPE -->
+        <!-- ========================================== -->
+        <section id="screen-unboxing" class="screen hidden">
+            <div class="unboxing-content">
+                <div class="sparkles-header">
+                    <span class="star">✨</span>
+                    <span class="star">⭐</span>
+                    <span class="star">✨</span>
+                </div>
+                
+                <h2 class="unboxing-title">Barcode Terverifikasi! 🎉</h2>
+                <p class="unboxing-sub">Ada hadiah ucapan rahasia khusus untukmu. Ketuk kado / amplop untuk membukanya!</p>
+
+                <!-- 3D Gift Box / Envelope Container -->
+                <div class="gift-box-wrapper" id="gift-box-trigger">
+                    <div class="gift-box">
+                        <div class="gift-lid">
+                            <div class="ribbon-bow"></div>
+                        </div>
+                        <div class="gift-body">
+                            <div class="ribbon-v"></div>
+                            <div class="ribbon-h"></div>
+                        </div>
+                        <div class="gift-glow"></div>
+                    </div>
+                    <div class="click-hint"><i class="fa-solid fa-hand-pointer bounce"></i> Sentuh Kado Ini!</div>
+                </div>
+
+                <div class="unboxing-btn-box" style="margin-top: 30px;">
+                    <button id="btn-open-gift-direct" class="btn btn-primary glow-btn" style="font-size: 1.05rem; padding: 14px 28px;">
+                        <i class="fa-solid fa-gift"></i> Buka Kado Sekarang! 🎁
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- SCREEN 3: MAIN BIRTHDAY STAGE & CELEBRATION-->
+        <!-- ========================================== -->
+        <section id="screen-greeting" class="screen hidden">
+
+            <!-- Container for Floating Balloons -->
+            <div id="balloon-container" class="balloon-container"></div>
+
+            <div class="greeting-wrapper">
+
+                <!-- Header Banner -->
+                <div class="birthday-banner-box">
+                    <div class="confetti-dots"></div>
+                    <h3 class="curved-text">SELAMAT ULANG TAHUN!</h3>
+                    <h1 class="recipient-name glow-name" id="display-name">Sahabat Terbaik 🎉</h1>
+                    <div class="age-badge" id="display-age">Spesial Hari Bahagiamu ✨</div>
+                </div>
+
+                <!-- Interactive 3D Cake Section -->
+                <div class="cake-section">
+                    <div class="cake-container">
+                        <!-- Cake Base & Layers -->
+                        <div class="cake">
+                            <div class="plate"></div>
+                            <div class="layer layer-bottom"></div>
+                            <div class="layer layer-middle"></div>
+                            <div class="layer layer-top"></div>
+                            <div class="icing">
+                                <div class="drip drip1"></div>
+                                <div class="drip drip2"></div>
+                                <div class="drip drip3"></div>
+                                <div class="drip drip4"></div>
+                                <div class="drip drip5"></div>
+                            </div>
+
+                            <!-- Candle Group -->
+                            <div class="candles-group">
+                                <div class="candle" id="candle-1">
+                                    <div class="stripe"></div>
+                                    <div class="wick"></div>
+                                    <div class="flame"></div>
+                                </div>
+                                <div class="candle" id="candle-2">
+                                    <div class="stripe"></div>
+                                    <div class="wick"></div>
+                                    <div class="flame"></div>
+                                </div>
+                                <div class="candle" id="candle-3">
+                                    <div class="stripe"></div>
+                                    <div class="wick"></div>
+                                    <div class="flame"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Candle Blow Interaction Controls -->
+                    <div class="candle-controls">
+                        <div class="candle-status" id="candle-status-text">
+                            <i class="fa-solid fa-fire"></i> Lilin sedang menyala! Tiup atau ketuk tombol untuk memadamkannya.
+                        </div>
+                        <div class="candle-btn-group">
+                            <button id="btn-blow-candle" class="btn btn-flame glow-btn">
+                                <i class="fa-solid fa-wind"></i> Tiup Lilin! 🎂
+                            </button>
+                            <button id="btn-mic-blow" class="btn btn-outline">
+                                <i class="fa-solid fa-microphone"></i> Gunakan Mic (Tiup Asli)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Animated Message Card -->
+                <div class="glass-card message-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-envelope-open-text heart-icon"></i>
+                        <span>Pesan & Doa Spesial</span>
+                    </div>
+
+                    <div class="message-content">
+                        <p id="typed-message" class="typed-text"></p>
+                        <span class="cursor">|</span>
+                    </div>
+
+                    <div class="signature-box" id="display-sender">
+                        Dari: <strong id="sender-name">Seseorang yang Peduli ❤️</strong>
+                    </div>
+                </div>
+
+                <!-- Interactive Wishes / Action Bar -->
+                <div class="greeting-action-bar">
+                    <button id="btn-trigger-fireworks" class="btn btn-sparkle">
+                        <i class="fa-solid fa-burst"></i> Pesta Kembang Api 🎆
+                    </button>
+                    <button id="btn-spawn-balloons" class="btn btn-sparkle">
+                        <i class="fa-solid fa-balloon"></i> Tambah Balon 🎈
+                    </button>
+                    <button id="btn-share-card" class="btn btn-secondary">
+                        <i class="fa-solid fa-share-nodes"></i> Bagikan Ucapan
+                    </button>
+                    <button id="btn-back-scan" class="btn btn-outline">
+                        <i class="fa-solid fa-qrcode"></i> Pindai Lagi
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODAL: QR CODE CREATOR & CUSTOMIZER -->
+    <!-- ========================================== -->
+    <div id="qr-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <button id="btn-close-modal" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h2><i class="fa-solid fa-qrcode"></i> Buat Barcode / QR Ucapan</h2>
+            <p class="modal-sub">Isi form di bawah ini untuk menghasilkan Barcode / QR Code khusus ucapan ulang tahun yang dapat di-scan atau dicetak!</p>
+
+            <form id="qr-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="input-rec-name">Nama Yang Ulang Tahun:</label>
+                    <input type="text" id="input-rec-name" placeholder="Contoh: Siska / Budi" required value="Sahabatku">
+                </div>
+
+                <div class="form-group">
+                    <label for="input-rec-age">Usia / Sub-judul (Opsional):</label>
+                    <input type="text" id="input-rec-age" placeholder="Contoh: Sweet 17th / 25th Birthday" value="Sweet 17th Birthday">
+                </div>
+
+                <div class="form-group">
+                    <label for="input-sender-name">Dari (Pengirim):</label>
+                    <input type="text" id="input-sender-name" placeholder="Contoh: Teman-Teman Kantor" value="Teman Terbaikmu">
+                </div>
+
+                <div class="form-group">
+                    <label for="input-birthday-msg">Pesan & Doa Ultah:</label>
+                    <textarea id="input-birthday-msg" rows="4" placeholder="Tuliskan ucapan selamat ulang tahun & doa terbaikmu...">Selamat ulang tahun! Semoga di usiamu yang baru ini diberikan kesehatan, kebahagiaan yang melimpah, dan semua cita-citamu tercapai. Tetaplah menjadi pribadi yang ceria dan menginspirasi!</textarea>
+                </div>
+
+                <button id="btn-generate-qr" class="btn btn-primary glow-btn full-width">
+                    <i class="fa-solid fa-gears"></i> Generate Barcode & QR Code
+                </button>
+            </form>
+
+            <!-- Result Box -->
+            <div id="qr-result-box" class="qr-result-box hidden">
+                <hr>
+                <h3>Barcode & QR Code Siap! 🎉</h3>
+                <p>Pindai kode di bawah ini dengan kamera HP atau bagikan linknya:</p>
+                
+                <div class="code-preview-container">
+                    <div class="code-card">
+                        <span class="code-label"><i class="fa-solid fa-qrcode"></i> QR Code</span>
+                        <div id="qrcode-render" class="qrcode-render"></div>
+                    </div>
+
+                    <div class="code-card">
+                        <span class="code-label"><i class="fa-solid fa-barcode"></i> Barcode Line</span>
+                        <div class="barcode-render-box">
+                            <svg id="barcode-svg"></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qr-result-actions">
+                    <button id="btn-test-scanned" class="btn btn-primary">
+                        <i class="fa-solid fa-play"></i> Uji Coba Buka Ucapan Ini
+                    </button>
+                    <button id="btn-copy-link" class="btn btn-secondary">
+                        <i class="fa-solid fa-copy"></i> Salin Link Ucapan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
