@@ -90,7 +90,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 3. NAVIGATION & SCREEN SWITCHING
     // ==========================================
+    function resetCandlesToLit() {
+        state.candlesLit = true;
+        if (elements.candles) {
+            elements.candles.forEach(candle => candle.classList.remove('out'));
+        }
+        if (elements.candleStatusText) {
+            elements.candleStatusText.innerHTML = `<i class="fa-solid fa-fire"></i> Lilin sedang menyala! Tiup atau ketuk tombol untuk memadamkannya.`;
+        }
+        if (elements.btnBlowCandle) {
+            elements.btnBlowCandle.disabled = false;
+            elements.btnBlowCandle.style.opacity = 1;
+        }
+        if (elements.btnMicBlow) {
+            elements.btnMicBlow.style.display = 'inline-flex';
+            elements.btnMicBlow.innerHTML = `<i class="fa-solid fa-microphone"></i> Gunakan Mic (Tiup Asli)`;
+            elements.btnMicBlow.classList.remove('glow-btn');
+        }
+    }
+
     function switchScreen(targetScreenName) {
+        if (targetScreenName === 'greeting') {
+            resetCandlesToLit();
+        }
         if (targetScreenName === 'unboxing') {
             isUnboxingTriggered = false;
             if (elements.giftBoxTrigger) {
@@ -681,8 +703,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.btnBlowCandle.addEventListener('click', extinguishCandles);
 
-    // Microphone Blow Listener with High-Sensitivity Wind & Peak Detection
+    // Microphone Blow Listener with High-Sensitivity Wind & Peak Detection (With 650ms Finger Tap Grace Period)
     elements.btnMicBlow.addEventListener('click', async () => {
+        if (!state.candlesLit) return;
         getAudioContext();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -699,9 +722,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const timeDomainData = new Uint8Array(analyser.fftSize);
             const freqData = new Uint8Array(analyser.frequencyBinCount);
+            
+            const micStartTime = Date.now();
+            let blowFrameCount = 0;
 
             function checkBlowVolume() {
                 if (!state.candlesLit) return;
+
+                // 650ms Grace Period: Ignore audio immediately after button click to skip finger tap sound
+                if (Date.now() - micStartTime < 650) {
+                    state.micAnimationId = requestAnimationFrame(checkBlowVolume);
+                    return;
+                }
 
                 analyser.getByteTimeDomainData(timeDomainData);
                 analyser.getByteFrequencyData(freqData);
@@ -721,18 +753,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const lowFreqAvg = lowFreqSum / lowFreqBins;
 
-                // Sensitive blow condition
-                if (maxPeak > 24 || lowFreqAvg > 30) {
-                    extinguishCandles();
-                    if (state.micStream) {
-                        state.micStream.getTracks().forEach(track => track.stop());
-                    }
-                    if (state.micAnimationId) {
-                        cancelAnimationFrame(state.micAnimationId);
+                // Sustained blow condition: Requires 2 consecutive frames of blowing noise
+                if (maxPeak > 32 || lowFreqAvg > 38) {
+                    blowFrameCount++;
+                    if (blowFrameCount >= 2) {
+                        extinguishCandles();
+                        if (state.micStream) {
+                            state.micStream.getTracks().forEach(track => track.stop());
+                        }
+                        if (state.micAnimationId) {
+                            cancelAnimationFrame(state.micAnimationId);
+                        }
+                        return;
                     }
                 } else {
-                    state.micAnimationId = requestAnimationFrame(checkBlowVolume);
+                    blowFrameCount = Math.max(0, blowFrameCount - 1);
                 }
+
+                state.micAnimationId = requestAnimationFrame(checkBlowVolume);
             }
 
             checkBlowVolume();
