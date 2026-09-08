@@ -1,5 +1,5 @@
 /**
- * KARTU UCAPAN SELAMAT ULANG TAHUN INTERAKTIF
+ * KARTU UCAPAN SELAMAT ULANG TAHUN INTERAKTIF - Versi Disempurnakan
  * Engine Javascript: QR/Barcode Scanner, Web Audio Synth, Fireworks Canvas, Blow-Candle Mic Listener, Balloon Physics
  */
 
