@@ -694,20 +694,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // 12. QR CODE CREATOR & CUSTOMIZER MODAL
     // ==========================================
     function openQrModal() {
-        elements.qrModal.classList.remove('hidden');
+        if (elements.qrModal) {
+            elements.qrModal.classList.remove('hidden');
+            elements.qrModal.style.display = 'flex';
+        }
         // Pre-fill inputs with current state
-        document.getElementById('input-rec-name').value = state.recipientName;
-        document.getElementById('input-rec-age').value = state.recipientAge;
-        document.getElementById('input-sender-name').value = state.senderName;
-        document.getElementById('input-birthday-msg').value = state.birthdayMessage;
+        if (document.getElementById('input-rec-name')) document.getElementById('input-rec-name').value = state.recipientName;
+        if (document.getElementById('input-rec-age')) document.getElementById('input-rec-age').value = state.recipientAge;
+        if (document.getElementById('input-sender-name')) document.getElementById('input-sender-name').value = state.senderName;
+        if (document.getElementById('input-birthday-msg')) document.getElementById('input-birthday-msg').value = state.birthdayMessage;
     }
 
     function closeQrModal() {
-        elements.qrModal.classList.add('hidden');
+        if (elements.qrModal) {
+            elements.qrModal.classList.add('hidden');
+            elements.qrModal.style.display = 'none';
+        }
     }
 
-    elements.btnCreateQr.addEventListener('click', openQrModal);
-    elements.btnCloseModal.addEventListener('click', closeQrModal);
+    if (elements.btnCreateQr) {
+        ['click', 'touchstart', 'pointerdown'].forEach(evt => {
+            elements.btnCreateQr.addEventListener(evt, (e) => {
+                if (evt === 'touchstart') e.preventDefault();
+                openQrModal();
+            }, { passive: false });
+        });
+    }
+
+    if (elements.btnCloseModal) {
+        ['click', 'touchstart', 'pointerdown'].forEach(evt => {
+            elements.btnCloseModal.addEventListener(evt, (e) => {
+                if (evt === 'touchstart') e.preventDefault();
+                closeQrModal();
+            }, { passive: false });
+        });
+    }
 
     // Generate Custom Barcode & QR Code
     elements.btnGenerateQr.addEventListener('click', () => {
