@@ -1162,6 +1162,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (elements.qrModal) {
             elements.qrModal.classList.remove('hidden');
             elements.qrModal.style.display = 'flex';
+            const modalContent = elements.qrModal.querySelector('.modal-content');
+            if (modalContent) modalContent.scrollTop = 0;
         }
         // Pre-fill inputs with current state
         if (document.getElementById('input-rec-name')) document.getElementById('input-rec-name').value = state.recipientName;
@@ -1178,25 +1180,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (elements.btnCreateQr) {
-        ['click', 'touchstart', 'pointerdown'].forEach(evt => {
-            elements.btnCreateQr.addEventListener(evt, (e) => {
-                if (evt === 'touchstart') e.preventDefault();
-                openQrModal();
-            }, { passive: false });
+        elements.btnCreateQr.addEventListener('click', (e) => {
+            e.preventDefault();
+            openQrModal();
         });
     }
 
     if (elements.btnCloseModal) {
-        ['click', 'touchstart', 'pointerdown'].forEach(evt => {
-            elements.btnCloseModal.addEventListener(evt, (e) => {
-                if (evt === 'touchstart') e.preventDefault();
-                closeQrModal();
-            }, { passive: false });
+        elements.btnCloseModal.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeQrModal();
         });
     }
 
-    // Generate Custom Barcode & QR Code
-    elements.btnGenerateQr.addEventListener('click', () => {
+    // Core Barcode & QR Code Generator Function
+    function handleGenerateCardAndQr(e) {
+        if (e) e.preventDefault();
+
         const rName = document.getElementById('input-rec-name').value.trim() || "Sahabatku";
         const rAge = document.getElementById('input-rec-age').value.trim() || "Spesial Hari Bahagiamu ✨";
         const sName = document.getElementById('input-sender-name').value.trim() || "Seseorang yang Peduli ❤️";
@@ -1268,6 +1268,13 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.qrResultBox.classList.remove('hidden');
         showToast("Barcode & QR Code berhasil dibuat! 🎉");
 
+        // Auto-scroll to result box for great mobile UX
+        setTimeout(() => {
+            if (elements.qrResultBox) {
+                elements.qrResultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 100);
+
         // Attach action events for generated link
         const btnDownloadQr = document.getElementById('btn-download-qr');
         if (btnDownloadQr) {
@@ -1308,8 +1315,14 @@ document.addEventListener('DOMContentLoaded', () => {
             launchMassiveFireworks();
             triggerGoldenStarsRain();
             showToast("Memuat Kartu Ucapan Ulang Tahun! 🎁✨");
-        };
-    });
+    }
+
+    if (elements.btnGenerateQr) {
+        elements.btnGenerateQr.addEventListener('click', handleGenerateCardAndQr);
+    }
+    if (elements.qrForm) {
+        elements.qrForm.addEventListener('submit', handleGenerateCardAndQr);
+    }
 
     // Download High Quality QR Code Image Function with Crisp Non-Blurred Margins
     function downloadQrCodeImage(recipientName) {
