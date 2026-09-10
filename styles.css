@@ -1179,3 +1179,172 @@ body {
     .qr-result-sub-actions { flex-direction: column; }
     .ticket-code-text { font-size: 0.95rem; }
 }
+
+/* ==========================================================================
+   AVATAR PHOTO & THEMES & WHATSAPP BUTTON
+   ========================================================================== */
+.recipient-avatar-container {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 12px auto;
+    border-radius: 50%;
+    padding: 4px;
+    background: linear-gradient(135deg, var(--accent-pink), var(--accent-gold));
+    box-shadow: 0 0 25px rgba(255, 71, 87, 0.6);
+    animation: avatarPulse 3s infinite ease-in-out;
+}
+
+@keyframes avatarPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(255, 71, 87, 0.6); }
+    50% { transform: scale(1.05); box-shadow: 0 0 35px rgba(255, 215, 0, 0.8); }
+}
+
+.recipient-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    border: 2px solid #fff;
+}
+
+/* Photo Upload UI */
+.photo-upload-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.photo-upload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    transition: all 0.25s ease;
+}
+
+.photo-upload-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent-gold);
+}
+
+.photo-preview-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+.photo-preview-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent-gold);
+}
+
+.btn-remove-photo {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: transparent;
+    border: none;
+    color: #ff4757;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* Theme Selector Cards */
+.theme-selector-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.theme-option {
+    cursor: pointer;
+}
+
+.theme-option input[type="radio"] {
+    display: none;
+}
+
+.theme-card {
+    padding: 10px 6px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 2px solid transparent;
+    transition: all 0.25s ease;
+    box-sizing: border-box;
+}
+
+.theme-preview-playful {
+    background: linear-gradient(135deg, #1a103c, #3a1c71);
+    color: #ffd700;
+}
+
+.theme-preview-luxe {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: #f59e0b;
+}
+
+.theme-preview-pastel {
+    background: linear-gradient(135deg, #fbcfe8, #f472b6);
+    color: #831843;
+}
+
+.theme-option input[type="radio"]:checked + .theme-card {
+    border-color: #ffffff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+/* WhatsApp Button */
+.btn-whatsapp {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 5px 20px rgba(37, 211, 102, 0.4);
+}
+
+.btn-whatsapp:hover {
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Theme Classes Dynamic Body */
+body.theme-luxe {
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    --accent-pink: #d97706;
+    --accent-gold: #fbbf24;
+}
+
+body.theme-pastel {
+    background: radial-gradient(circle at center, #fdf2f8 0%, #fbcfe8 100%);
+    color: #4c1d95;
+    --accent-pink: #ec4899;
+    --accent-gold: #f59e0b;
+}
+
+body.theme-pastel .glass-card {
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(236, 72, 153, 0.2);
+    color: #4c1d95;
+}
+
+body.theme-pastel .glow-title {
+    color: #831843;
+    text-shadow: none;
+}
+
