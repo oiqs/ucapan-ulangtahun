@@ -12,7 +12,7 @@
     --accent-cyan: #00f0ff;
     --accent-pink: #ff69b4;
     --text-light: #f8f9fa;
-    --text-muted: #b8b3d8;
+    --text-muted: #d8d4f8;
     --glass-bg: rgba(255, 255, 255, 0.07);
     --glass-border: rgba(255, 255, 255, 0.15);
     --glass-glow: rgba(255, 0, 127, 0.2);
@@ -537,6 +537,8 @@ body {
     position: relative;
     display: flex;
     justify-content: center;
+    perspective: 800px;
+    cursor: pointer;
 }
 
 .cake {
@@ -544,6 +546,12 @@ body {
     bottom: 0;
     width: 200px;
     height: 160px;
+    transform-style: preserve-3d;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.cake-container:hover .cake {
+    transform: rotateX(10deg) rotateY(8deg) scale(1.04);
 }
 
 .plate {
@@ -1265,9 +1273,15 @@ body {
 /* Theme Selector Cards */
 .theme-selector-group {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
     margin-top: 8px;
+}
+
+@media (max-width: 480px) {
+    .theme-selector-group {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .theme-option {
@@ -1279,10 +1293,10 @@ body {
 }
 
 .theme-card {
-    padding: 10px 6px;
+    padding: 10px 4px;
     border-radius: 12px;
     text-align: center;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 600;
     border: 2px solid transparent;
     transition: all 0.25s ease;
@@ -1302,6 +1316,11 @@ body {
 .theme-preview-pastel {
     background: linear-gradient(135deg, #fbcfe8, #f472b6);
     color: #831843;
+}
+
+.theme-preview-ocean {
+    background: linear-gradient(135deg, #0f172a, #0284c7);
+    color: #38bdf8;
 }
 
 .theme-option input[type="radio"]:checked + .theme-card {
@@ -1335,6 +1354,7 @@ body.theme-pastel {
     color: #4c1d95;
     --accent-pink: #ec4899;
     --accent-gold: #f59e0b;
+    --text-muted: #6b21a8;
 }
 
 body.theme-pastel .glass-card {
@@ -1346,5 +1366,13 @@ body.theme-pastel .glass-card {
 body.theme-pastel .glow-title {
     color: #831843;
     text-shadow: none;
+}
+
+body.theme-ocean {
+    background: radial-gradient(circle at center, #0f172a 0%, #0369a1 70%, #023e8a 100%);
+    --accent-pink: #06b6d4;
+    --accent-gold: #38bdf8;
+    --accent-magenta: #0284c7;
+    --text-muted: #bae6fd;
 }
 

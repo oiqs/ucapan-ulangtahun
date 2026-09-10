@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function applyTheme(themeName) {
-        document.body.classList.remove('theme-playful', 'theme-luxe', 'theme-pastel');
+        document.body.classList.remove('theme-playful', 'theme-luxe', 'theme-pastel', 'theme-ocean');
         if (themeName && themeName !== 'playful') {
             document.body.classList.add(`theme-${themeName}`);
         }

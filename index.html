@@ -40,8 +40,8 @@
     <canvas id="fireworks-canvas"></canvas>
 
     <!-- Ambient Audio Player Control (Floating) -->
-    <div class="audio-control-floating hidden" id="audio-control-btn">
-        <button id="toggle-music-btn" title="Putar/Hentikan Musik">
+    <div class="audio-control-floating hidden" id="audio-control-btn" aria-label="Pengontrol Musik">
+        <button id="toggle-music-btn" title="Putar/Hentikan Musik" aria-label="Putar atau Hentikan Musik Ulang Tahun">
             <i class="fa-solid fa-music"></i>
             <span class="music-waves">
                 <span></span><span></span><span></span>
@@ -287,7 +287,7 @@
     <!-- ========================================== -->
     <div id="qr-modal" class="modal hidden">
         <div class="modal-content glass-card">
-            <button id="btn-close-modal" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+            <button id="btn-close-modal" class="modal-close" aria-label="Tutup Modal"><i class="fa-solid fa-xmark"></i></button>
             
             <h2><i class="fa-solid fa-qrcode"></i> Buat Barcode / QR Ucapan</h2>
             <p class="modal-sub">Isi form di bawah ini untuk menghasilkan Barcode / QR Code khusus ucapan ulang tahun yang dapat di-scan atau dicetak!</p>
@@ -323,7 +323,7 @@
                         <input type="file" id="input-rec-photo" accept="image/*" style="display: none;" />
                         <div id="photo-preview-container" class="photo-preview-container hidden">
                             <img id="photo-preview-img" class="photo-preview-img" src="" alt="Preview Foto" />
-                            <button type="button" id="btn-remove-photo" class="btn-remove-photo" title="Hapus foto"><i class="fa-solid fa-circle-xmark"></i></button>
+                            <button type="button" id="btn-remove-photo" class="btn-remove-photo" aria-label="Hapus Foto Upload" title="Hapus foto"><i class="fa-solid fa-circle-xmark"></i></button>
                         </div>
                     </div>
                 </div>
@@ -347,7 +347,13 @@
                         <label class="theme-option">
                             <input type="radio" name="card-theme" value="pastel">
                             <div class="theme-card theme-preview-pastel">
-                                <span>🌸 Pastel Cute</span>
+                                <span>🌸 Pastel</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="card-theme" value="ocean">
+                            <div class="theme-card theme-preview-ocean">
+                                <span>💙 Ocean</span>
                             </div>
                         </label>
                     </div>
