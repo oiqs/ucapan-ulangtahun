@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 a: (rAge || "").trim(),
                 f: (sName || "").trim(),
                 m: (bMsg || "").trim(),
+                p: state.recipientPhoto || null,
                 th: state.cardTheme || 'playful',
                 c: (barcodeCode || "").trim(),
                 t: now,
@@ -873,6 +874,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (extracted.age) state.recipientAge = extracted.age;
                 if (extracted.from) state.senderName = extracted.from;
                 if (extracted.msg) state.birthdayMessage = extracted.msg;
+                if (extracted.photo) state.recipientPhoto = extracted.photo;
+                if (extracted.theme) state.cardTheme = extracted.theme;
                 hasCustomParams = true;
             } else {
                 // 2. Check if cleanStr matches a stored ticket code in cardCodeMap
@@ -893,6 +896,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (storedCard.rAge) state.recipientAge = storedCard.rAge;
                         if (storedCard.sName) state.senderName = storedCard.sName;
                         if (storedCard.bMsg) state.birthdayMessage = storedCard.bMsg;
+                        if (storedCard.photo) state.recipientPhoto = storedCard.photo;
+                        if (storedCard.theme) state.cardTheme = storedCard.theme;
                         hasCustomParams = true;
                     }
                 } catch(e){}
@@ -923,6 +928,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (card.rAge) state.recipientAge = card.rAge;
                                 if (card.sName) state.senderName = card.sName;
                                 if (card.bMsg) state.birthdayMessage = card.bMsg;
+                                if (card.photo) state.recipientPhoto = card.photo;
+                                if (card.theme) state.cardTheme = card.theme;
                                 hasCustomParams = true;
                             }
                         } catch(e){}
@@ -960,6 +967,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (card.rAge) state.recipientAge = card.rAge;
                     if (card.sName) state.senderName = card.sName;
                     if (card.bMsg) state.birthdayMessage = card.bMsg;
+                    if (card.photo) state.recipientPhoto = card.photo;
+                    if (card.theme) state.cardTheme = card.theme;
                 } catch(e){}
             }
         }
@@ -1380,7 +1389,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const maxDim = 160;
+                const maxDim = 110;
                 let width = img.width;
                 let height = img.height;
                 if (width > height) {
@@ -1392,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                callback(canvas.toDataURL('image/jpeg', 0.75));
+                callback(canvas.toDataURL('image/jpeg', 0.55));
             };
             img.src = e.target.result;
         };
