@@ -1014,7 +1014,15 @@ body {
 }
 
 .barcode-only-container {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.code-card.single-card {
+    max-width: 260px;
+    margin: 0 auto;
 }
 
 .code-card {

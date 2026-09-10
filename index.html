@@ -312,22 +312,14 @@
             <!-- Result Box -->
             <div id="qr-result-box" class="qr-result-box hidden">
                 <hr>
-                <h3>Barcode & QR Code Siap! 🎉</h3>
-                <p>Pindai kode di bawah ini dengan pemindai barcode atau kamera HP:</p>
+                <h3>Barcode Ucapan Siap! 🎉</h3>
+                <p>Pindai barcode di bawah ini dengan kamera HP untuk membuka ucapan:</p>
                 
                 <div class="code-preview-container barcode-only-container">
-                    <div class="code-card">
-                        <span class="code-label"><i class="fa-solid fa-barcode"></i> Barcode 1D (Garis)</span>
-                        <div id="barcode1d-render" class="barcode1d-render">
-                            <svg id="barcode1d-svg"></svg>
-                        </div>
-                        <span class="code-subtext">Mudah di-scan pemindai barcode & kamera</span>
-                    </div>
-
-                    <div class="code-card">
-                        <span class="code-label"><i class="fa-solid fa-qrcode"></i> QR Code 2D</span>
+                    <div class="code-card single-card">
+                        <span class="code-label"><i class="fa-solid fa-qrcode"></i> Barcode Ucapan (QR Code)</span>
                         <div id="qrcode-render" class="qrcode-render"></div>
-                        <span class="code-subtext">Format simpel & cepat untuk kamera HP</span>
+                        <span class="code-subtext">Format simpel & langsung dipindai kamera HP</span>
                     </div>
                 </div>
 
@@ -335,14 +327,9 @@
                     <button id="btn-download-ticket-card" class="btn btn-flame glow-btn full-width">
                         <i class="fa-solid fa-print"></i> Unduh Kartu Barcode Siap Cetak (HD PNG)
                     </button>
-                    <div class="qr-result-sub-actions">
-                        <button id="btn-download-1d" class="btn btn-secondary">
-                            <i class="fa-solid fa-barcode"></i> Unduh Barcode 1D
-                        </button>
-                        <button id="btn-download-qr" class="btn btn-secondary">
-                            <i class="fa-solid fa-qrcode"></i> Unduh QR Code
-                        </button>
-                    </div>
+                    <button id="btn-download-qr" class="btn btn-secondary full-width" style="margin-top: 8px;">
+                        <i class="fa-solid fa-qrcode"></i> Unduh Gambar Barcode (PNG)
+                    </button>
                     <button id="btn-test-scanned" class="btn btn-outline full-width" style="margin-top: 8px;">
                         <i class="fa-solid fa-play"></i> Uji Coba Buka Ucapan
                     </button>
