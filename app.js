@@ -203,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 a: (rAge || "").trim(),
                 f: (sName || "").trim(),
                 m: (bMsg || "").trim(),
-                p: state.recipientPhoto || null,
                 th: state.cardTheme || 'playful',
                 c: (barcodeCode || "").trim(),
                 t: now,
@@ -1434,20 +1433,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     height: 280,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
+                    correctLevel: QRCode.CorrectLevel.L
                 });
-                qrSuccess = true;
+                if (elements.qrcodeRender.querySelector('canvas, img')) {
+                    qrSuccess = true;
+                }
             } catch (e) {
-                console.warn("QRCode JS error, using fallback API:", e);
+                console.warn("QRCode JS error, attempting fallback:", e);
             }
         }
 
-        if (!qrSuccess || !elements.qrcodeRender.querySelector('img, canvas')) {
+        if (!qrSuccess) {
             const qrImg = document.createElement('img');
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&color=000000&bgcolor=ffffff&data=${encodeURIComponent(fullShareUrl)}`;
             qrImg.alt = "QR Code Birthday Card";
             qrImg.width = 280;
             qrImg.height = 280;
+            qrImg.onerror = function() {
+                // Secondary API fallback if qrserver.com is blocked
+                this.src = `https://quickchart.io/qr?size=280&text=${encodeURIComponent(fullShareUrl)}`;
+            };
             elements.qrcodeRender.innerHTML = '';
             elements.qrcodeRender.appendChild(qrImg);
         }
