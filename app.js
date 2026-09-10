@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 a: (rAge || "").trim(),
                 f: (sName || "").trim(),
                 m: (bMsg || "").trim(),
+                p: state.recipientPhoto || null,
                 th: state.cardTheme || 'playful',
                 c: (barcodeCode || "").trim(),
                 t: now,
@@ -313,6 +314,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const avatarContainer = document.getElementById('recipient-avatar-container');
         const displayPhoto = document.getElementById('display-photo');
         if (state.recipientPhoto && displayPhoto && avatarContainer) {
+            displayPhoto.onerror = function() {
+                avatarContainer.classList.add('hidden');
+            };
             displayPhoto.src = state.recipientPhoto;
             avatarContainer.classList.remove('hidden');
         } else if (avatarContainer) {
@@ -1388,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const maxDim = 110;
+                const maxDim = 80;
                 let width = img.width;
                 let height = img.height;
                 if (width > height) {
@@ -1396,11 +1400,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (height > maxDim) { width *= maxDim / height; height = maxDim; }
                 }
-                canvas.width = width;
-                canvas.height = height;
+                canvas.width = Math.round(width);
+                canvas.height = Math.round(height);
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                callback(canvas.toDataURL('image/jpeg', 0.55));
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                callback(canvas.toDataURL('image/jpeg', 0.45));
             };
             img.src = e.target.result;
         };
