@@ -203,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 a: (rAge || "").trim(),
                 f: (sName || "").trim(),
                 m: (bMsg || "").trim(),
-                p: state.recipientPhoto || null,
                 th: state.cardTheme || 'playful',
                 c: (barcodeCode || "").trim(),
                 t: now,
