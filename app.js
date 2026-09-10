@@ -192,10 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rName) params.set('n', rName.trim());
         if (rAge) params.set('a', rAge.trim());
         if (sName) params.set('f', sName.trim());
-        // Truncate/limit URL message parameter to keep QR code matrix low-density, clean & bold
-        if (bMsg && bMsg.trim().length <= 100) {
-            params.set('m', bMsg.trim());
-        }
+        if (bMsg) params.set('m', bMsg.trim());
         if (barcodeCode) params.set('c', barcodeCode.trim());
         params.set('exp', expTime);
 
@@ -247,10 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleMusicBtn: document.getElementById('toggle-music-btn'),
         giftBoxTrigger: document.getElementById('gift-box-trigger'),
         btnOpenGiftDirect: document.getElementById('btn-open-gift-direct'),
-        btnQuickDemo: document.getElementById('btn-quick-demo'),
         btnCreateQr: document.getElementById('btn-create-qr'),
-        btnSubmitCode: document.getElementById('btn-submit-code'),
-        manualCodeInput: document.getElementById('manual-code-input'),
         scanStatus: document.getElementById('scan-status'),
         btnBlowCandle: document.getElementById('btn-blow-candle'),
         btnMicBlow: document.getElementById('btn-mic-blow'),
@@ -269,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
         qrResultBox: document.getElementById('qr-result-box'),
         qrcodeRender: document.getElementById('qrcode-render'),
         btnTestScanned: document.getElementById('btn-test-scanned'),
-        btnCopyLink: document.getElementById('btn-copy-link'),
         toast: document.getElementById('toast')
     };
 
