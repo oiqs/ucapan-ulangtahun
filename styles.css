@@ -1286,6 +1286,9 @@ body {
 
 .theme-option {
     cursor: pointer;
+    display: block;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .theme-option input[type="radio"] {
@@ -1301,6 +1304,10 @@ body {
     border: 2px solid transparent;
     transition: all 0.25s ease;
     box-sizing: border-box;
+}
+
+.theme-card span {
+    pointer-events: none;
 }
 
 .theme-preview-playful {

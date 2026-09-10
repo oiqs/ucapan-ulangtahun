@@ -1306,6 +1306,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('input-rec-age')) document.getElementById('input-rec-age').value = state.recipientAge;
         if (document.getElementById('input-sender-name')) document.getElementById('input-sender-name').value = state.senderName;
         if (document.getElementById('input-birthday-msg')) document.getElementById('input-birthday-msg').value = state.birthdayMessage;
+        
+        if (state.cardTheme) {
+            const radioToSelect = document.querySelector(`input[name="card-theme"][value="${state.cardTheme}"]`);
+            if (radioToSelect) radioToSelect.checked = true;
+        }
     }
 
     function closeQrModal() {
@@ -1314,6 +1319,17 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.qrModal.style.display = 'none';
         }
     }
+
+    // Real-time Theme Selector Live Preview Listener
+    const themeRadios = document.querySelectorAll('input[name="card-theme"]');
+    themeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const newTheme = e.target.value;
+            state.cardTheme = newTheme;
+            applyTheme(newTheme);
+            showToast(`Tema Tampilan: ${newTheme.toUpperCase()} ✨`);
+        });
+    });
 
     if (elements.btnCreateQr) {
         elements.btnCreateQr.addEventListener('click', (e) => {
