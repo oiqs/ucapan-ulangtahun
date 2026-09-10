@@ -88,14 +88,7 @@
                     </button>
                 </div>
 
-                <!-- Accordion/Info manual code input -->
-                <div class="manual-input-box">
-                    <span>Atau Masukkan Kode Tiket / Passcode / Link Ucapan:</span>
-                    <div class="input-group">
-                        <input type="text" id="manual-code-input" placeholder="Paste Kode Tiket, Passcode, atau Link..." autocomplete="off" autocorrect="off" autocapitalize="off" />
-                        <button id="btn-submit-code" class="btn btn-accent"><i class="fa-solid fa-key"></i> Buka</button>
-                    </div>
-                </div>
+
             </div>
         </section>
 
@@ -320,9 +313,9 @@
             <div id="qr-result-box" class="qr-result-box hidden">
                 <hr>
                 <h3>Barcode & QR Code Siap! 🎉</h3>
-                <p>Pindai kode di bawah ini dengan pemindai barcode / kamera HP atau bagikan linknya:</p>
+                <p>Pindai kode di bawah ini dengan pemindai barcode atau kamera HP:</p>
                 
-                <div class="code-preview-container">
+                <div class="code-preview-container barcode-only-container">
                     <div class="code-card">
                         <span class="code-label"><i class="fa-solid fa-barcode"></i> Barcode 1D (Garis)</span>
                         <div id="barcode1d-render" class="barcode1d-render">
@@ -336,21 +329,11 @@
                         <div id="qrcode-render" class="qrcode-render"></div>
                         <span class="code-subtext">Format simpel & cepat untuk kamera HP</span>
                     </div>
-
-                    <div class="code-card">
-                        <span class="code-label"><i class="fa-solid fa-ticket"></i> Kode Tiket Ultah</span>
-                        <div class="ticket-code-box" id="ticket-code-box" style="cursor: pointer;" title="Klik untuk menyalin kode tiket">
-                            <span id="ticket-code-display" class="ticket-code-text">HBD-SPECIAL-2026</span>
-                        </div>
-                        <button id="btn-copy-passcode" class="btn btn-outline" style="margin-top: 8px; width: 100%; font-size: 0.78rem; padding: 6px 10px;">
-                            <i class="fa-solid fa-copy"></i> Salin Passcode Kode
-                        </button>
-                    </div>
                 </div>
 
                 <div class="qr-result-actions">
                     <button id="btn-download-ticket-card" class="btn btn-flame glow-btn full-width">
-                        <i class="fa-solid fa-print"></i> Unduh Kartu Tiket Siap Cetak (HD PNG)
+                        <i class="fa-solid fa-print"></i> Unduh Kartu Barcode Siap Cetak (HD PNG)
                     </button>
                     <div class="qr-result-sub-actions">
                         <button id="btn-download-1d" class="btn btn-secondary">
@@ -360,14 +343,9 @@
                             <i class="fa-solid fa-qrcode"></i> Unduh QR Code
                         </button>
                     </div>
-                    <div class="qr-result-sub-actions">
-                        <button id="btn-copy-link" class="btn btn-outline">
-                            <i class="fa-solid fa-copy"></i> Salin Link Ucapan
-                        </button>
-                        <button id="btn-test-scanned" class="btn btn-outline">
-                            <i class="fa-solid fa-play"></i> Uji Coba Buka Ucapan
-                        </button>
-                    </div>
+                    <button id="btn-test-scanned" class="btn btn-outline full-width" style="margin-top: 8px;">
+                        <i class="fa-solid fa-play"></i> Uji Coba Buka Ucapan
+                    </button>
                 </div>
             </div>
         </div>

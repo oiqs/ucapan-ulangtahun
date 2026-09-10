@@ -1427,45 +1427,11 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        const btnCopyPasscode = document.getElementById('btn-copy-passcode');
-        if (btnCopyPasscode) {
-            btnCopyPasscode.onclick = () => {
-                const textToCopy = fullPasscode;
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(textToCopy).then(() => {
-                        showToast("Passcode Kode Tiket berhasil disalin! 📋");
-                    }).catch(() => fallbackCopyText(textToCopy));
-                } else {
-                    fallbackCopyText(textToCopy);
-                }
+        if (elements.btnCopyLink) {
+            elements.btnCopyLink.onclick = () => {
+                showToast("Pindai Barcode / QR Code untuk membuka ucapan! 📷");
             };
         }
-
-        const ticketCodeBox = document.getElementById('ticket-code-box');
-        if (ticketCodeBox) {
-            ticketCodeBox.onclick = () => {
-                const textToCopy = barcodeCode;
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(textToCopy).then(() => {
-                        showToast(`Kode Tiket (${barcodeCode}) disalin! 📋`);
-                    }).catch(() => fallbackCopyText(textToCopy));
-                } else {
-                    fallbackCopyText(textToCopy);
-                }
-            };
-        }
-
-        elements.btnCopyLink.onclick = () => {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(fullShareUrl).then(() => {
-                    showToast("Link ucapan berhasil disalin ke clipboard! 📋");
-                }).catch(() => {
-                    fallbackCopyText(fullShareUrl);
-                });
-            } else {
-                fallbackCopyText(fullShareUrl);
-            }
-        };
 
         function fallbackCopyText(text) {
             const tempInput = document.createElement("input");
