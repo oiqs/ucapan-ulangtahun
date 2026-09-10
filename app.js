@@ -178,31 +178,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return res;
     }
 
-    // Helper: Build ultra-compact, ultra-reliable Base64 shareable URL for QR Code with 30-Day Expiration Timestamp
+    // Helper: Build ultra-compact, ultra-reliable shareable URL for QR Code with 30-Day Expiration Timestamp
     function generateCompactShareUrl(rName, rAge, sName, bMsg, barcodeCode) {
         let baseUrl = window.location.origin + window.location.pathname;
-        if (!window.location.hostname.includes('vercel.app')) {
+        if (!window.location.hostname.includes('vercel.app') && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
             baseUrl = 'https://ucapan-ulangtahun.vercel.app/';
         }
 
         const now = Date.now();
         const expTime = now + THIRTY_DAYS_MS;
 
-        try {
-            const jsonPayload = JSON.stringify({
-                n: rName,
-                a: rAge,
-                f: sName,
-                m: bMsg,
-                t: now,
-                exp: expTime,
-                c: barcodeCode
-            });
-            const b64 = safeUtf8ToBase64(jsonPayload);
-            return baseUrl + `?d=${encodeURIComponent(b64)}`;
-        } catch(e) {
-            return baseUrl + `?n=${encodeURIComponent(rName)}&a=${encodeURIComponent(rAge)}&f=${encodeURIComponent(sName)}&m=${encodeURIComponent(bMsg)}&exp=${expTime}&c=${encodeURIComponent(barcodeCode)}`;
-        }
+        const params = new URLSearchParams();
+        if (rName) params.set('n', rName.trim());
+        if (rAge) params.set('a', rAge.trim());
+        if (sName) params.set('f', sName.trim());
+        if (bMsg) params.set('m', bMsg.trim());
+        if (barcodeCode) params.set('c', barcodeCode.trim());
+        params.set('exp', expTime);
+
+        return `${baseUrl}?${params.toString()}`;
     }
 
     let isCardExpiredOnLoad = false;
@@ -743,8 +737,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function launchCameraEngine(facingMode) {
         try {
-            html5QrCodeEngineInstance = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+            let formatsToSupport = undefined;
+            if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
+                formatsToSupport = [
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.UPC_A
+                ];
+            }
+
+            html5QrCodeEngineInstance = new Html5Qrcode("reader", {
+                formatsToSupport: formatsToSupport,
+                verbose: false
+            });
+
+            const config = {
+                fps: 15,
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    const minDim = Math.min(viewfinderWidth, viewfinderHeight);
+                    return {
+                        width: Math.floor(minDim * 0.85),
+                        height: Math.floor(minDim * 0.65)
+                    };
+                }
+            };
 
             html5QrCodeEngineInstance.start(
                 { facingMode: facingMode },
@@ -1279,13 +1297,13 @@ document.addEventListener('DOMContentLoaded', () => {
         state.senderName = sName;
         state.birthdayMessage = bMsg;
 
-        // Code text for 1D Barcode with 100% Unique Random Suffix (e.g. HBD-SISKA-8492)
+        // Clean, 1D-friendly Ticket Code (e.g. HBD-SISKA-8492)
         const barcodeCode = generateUniqueBarcodeCode(rName);
 
         const createdTime = Date.now();
         const expTime = createdTime + THIRTY_DAYS_MS;
 
-        // Build self-contained compact passcode payload
+        // Build self-contained passcode payload
         const jsonPayload = JSON.stringify({
             n: rName,
             a: rAge,
@@ -1311,10 +1329,33 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('cardCodeMap', JSON.stringify(codeMap));
         } catch(e){}
 
-        // Build Compact Shareable Link for 2D QR Code with 30-Day Expiration Timestamp
+        // Build Short Shareable Link for low-density, easy-to-scan 2D QR Code
         const fullShareUrl = generateCompactShareUrl(rName, rAge, sName, bMsg, barcodeCode);
 
-        // 1. Render High Definition 2D QR Code
+        // 1. Render 1D Linear Barcode (CODE128) using JsBarcode
+        const barcode1dSvg = document.getElementById('barcode1d-svg');
+        if (barcode1dSvg && typeof JsBarcode !== 'undefined') {
+            barcode1dSvg.innerHTML = '';
+            try {
+                JsBarcode("#barcode1d-svg", barcodeCode, {
+                    format: "CODE128",
+                    width: 2,
+                    height: 65,
+                    displayValue: true,
+                    fontSize: 14,
+                    font: "sans-serif",
+                    fontOptions: "bold",
+                    textMargin: 4,
+                    background: "#ffffff",
+                    lineColor: "#000000",
+                    margin: 8
+                });
+            } catch (err) {
+                console.warn("JsBarcode render error:", err);
+            }
+        }
+
+        // 2. Render High Contrast, Low Density 2D QR Code
         elements.qrcodeRender.innerHTML = '';
         let qrSuccess = false;
 
@@ -1345,7 +1386,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.qrcodeRender.appendChild(qrImg);
         }
 
-        // 2. Display Clean Ticket Code Text
+        // 3. Display Clean Ticket Code Text
         const ticketCodeDisplay = document.getElementById('ticket-code-display');
         if (ticketCodeDisplay) {
             ticketCodeDisplay.textContent = barcodeCode;
@@ -1361,7 +1402,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 100);
 
-        // Attach action events for generated link & passcodes
+        // Attach action events for generated codes & cards
+        const btnDownloadTicketCard = document.getElementById('btn-download-ticket-card');
+        if (btnDownloadTicketCard) {
+            btnDownloadTicketCard.onclick = () => {
+                downloadPrintableTicketCard(rName, rAge, sName, barcodeCode);
+            };
+        }
+
+        const btnDownload1d = document.getElementById('btn-download-1d');
+        if (btnDownload1d) {
+            btnDownload1d.onclick = () => {
+                download1dBarcodeImage(rName, barcodeCode);
+            };
+        }
+
         const btnDownloadQr = document.getElementById('btn-download-qr');
         if (btnDownloadQr) {
             btnDownloadQr.onclick = () => {
@@ -1437,6 +1492,174 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (elements.qrForm) {
         elements.qrForm.addEventListener('submit', handleGenerateCardAndQr);
+    }
+
+    // Download 1D Barcode PNG Image
+    function download1dBarcodeImage(recipientName, barcodeCode) {
+        const safeName = recipientName.replace(/[^a-zA-Z0-9]/g, '_') || 'Ucapan';
+        const fileName = `Barcode_1D_${safeName}.png`;
+        const svgElem = document.getElementById('barcode1d-svg');
+
+        if (!svgElem) {
+            showToast("Gambar Barcode 1D tidak ditemukan.");
+            return;
+        }
+
+        try {
+            const xml = new XMLSerializer().serializeToString(svgElem);
+            const svg64 = btoa(unescape(encodeURIComponent(xml)));
+            const image64 = 'data:image/svg+xml;base64,' + svg64;
+
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const padding = 25;
+                canvas.width = img.width + (padding * 2);
+                canvas.height = img.height + (padding * 2);
+                const ctx = canvas.getContext('2d');
+
+                ctx.imageSmoothingEnabled = false;
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, padding, padding);
+
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("Gambar Barcode 1D HD berhasil diunduh! 📥");
+            };
+            img.src = image64;
+        } catch(e) {
+            showToast("Gagal mengunduh gambar barcode 1D.");
+        }
+    }
+
+    // Download Complete Printable Ticket Card (PNG HD) with 1D & 2D Codes
+    function downloadPrintableTicketCard(rName, rAge, sName, barcodeCode) {
+        const safeName = rName.replace(/[^a-zA-Z0-9]/g, '_') || 'Ucapan';
+        const fileName = `Kartu_Tiket_Ultah_${safeName}.png`;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 650;
+        canvas.height = 940;
+        const ctx = canvas.getContext('2d');
+
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Border card
+        ctx.strokeStyle = "#ff4757";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+        ctx.strokeStyle = "#ffa502";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(28, 28, canvas.width - 56, canvas.height - 56);
+
+        // Header Title
+        ctx.fillStyle = "#1a103c";
+        ctx.font = "bold 26px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🎁 KARTU TIKET UCAPAN ULANG TAHUN 🎁", canvas.width / 2, 75);
+
+        ctx.fillStyle = "#ff4757";
+        ctx.font = "bold 22px sans-serif";
+        ctx.fillText(`Spesial Untuk: ${rName}`, canvas.width / 2, 115);
+
+        if (rAge) {
+            ctx.fillStyle = "#57606f";
+            ctx.font = "16px sans-serif";
+            ctx.fillText(`${rAge}`, canvas.width / 2, 142);
+        }
+
+        if (sName) {
+            ctx.fillStyle = "#2e86de";
+            ctx.font = "italic 16px sans-serif";
+            ctx.fillText(`Dari: ${sName}`, canvas.width / 2, 170);
+        }
+
+        // Horizontal Line
+        ctx.strokeStyle = "#e0e0e0";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(50, 190);
+        ctx.lineTo(canvas.width - 50, 190);
+        ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = "#2f3542";
+        ctx.font = "bold 15px sans-serif";
+        ctx.fillText("PEMINDAI BARCODE 1D (GARIS)", canvas.width / 2, 220);
+        ctx.fillText("PEMINDAI QR CODE 2D (KAMERA HP)", canvas.width / 2, 480);
+
+        // Ticket code footer box
+        ctx.fillStyle = "#f1f2f6";
+        ctx.fillRect(80, 805, canvas.width - 160, 55);
+        ctx.strokeStyle = "#ffa502";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(80, 805, canvas.width - 160, 55);
+
+        ctx.fillStyle = "#1a103c";
+        ctx.font = "bold 20px monospace";
+        ctx.fillText(`KODE TIKET: ${barcodeCode}`, canvas.width / 2, 840);
+
+        ctx.fillStyle = "#747d8c";
+        ctx.font = "13px sans-serif";
+        ctx.fillText("Arahkan Pemindai Barcode / Kamera HP ke Kode di Atas", canvas.width / 2, 885);
+
+        const svgElem = document.getElementById('barcode1d-svg');
+        const qrContainer = elements.qrcodeRender;
+        const qrSource = qrContainer.querySelector('canvas') || qrContainer.querySelector('img');
+
+        function saveCanvasImage() {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast("Kartu Tiket Ultah Siap Cetak berhasil diunduh! 📥");
+        }
+
+        let loadedCount = 0;
+        const totalToLoad = 2;
+        function checkFinished() {
+            loadedCount++;
+            if (loadedCount >= totalToLoad) {
+                saveCanvasImage();
+            }
+        }
+
+        // Draw 1D Barcode
+        if (svgElem) {
+            try {
+                const xml = new XMLSerializer().serializeToString(svgElem);
+                const svg64 = btoa(unescape(encodeURIComponent(xml)));
+                const b1dImg = new Image();
+                b1dImg.onload = function() {
+                    ctx.drawImage(b1dImg, (canvas.width - 460) / 2, 235, 460, 210);
+                    checkFinished();
+                };
+                b1dImg.onerror = function() { checkFinished(); };
+                b1dImg.src = 'data:image/svg+xml;base64,' + svg64;
+            } catch(e) { checkFinished(); }
+        } else {
+            checkFinished();
+        }
+
+        // Draw 2D QR Code
+        if (qrSource) {
+            const qrImg = new Image();
+            qrImg.crossOrigin = "anonymous";
+            qrImg.onload = function() {
+                ctx.drawImage(qrImg, (canvas.width - 270) / 2, 500, 270, 270);
+                checkFinished();
+            };
+            qrImg.onerror = function() { checkFinished(); };
+            qrImg.src = (qrSource.tagName === 'CANVAS') ? qrSource.toDataURL('image/png') : qrSource.src;
+        } else {
+            checkFinished();
+        }
     }
 
     // Download High Quality QR Code Image Function with Crisp Non-Blurred Margins
