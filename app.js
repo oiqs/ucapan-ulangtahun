@@ -192,7 +192,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rName) params.set('n', rName.trim());
         if (rAge) params.set('a', rAge.trim());
         if (sName) params.set('f', sName.trim());
-        if (bMsg) params.set('m', bMsg.trim());
+        // Truncate/limit URL message parameter to keep QR code matrix low-density, clean & bold
+        if (bMsg && bMsg.trim().length <= 100) {
+            params.set('m', bMsg.trim());
+        }
         if (barcodeCode) params.set('c', barcodeCode.trim());
         params.set('exp', expTime);
 
@@ -1535,79 +1538,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Download Complete Printable Ticket Card (PNG HD) with 1D & 2D Codes
+    // Download Complete Printable Ticket Card (PNG HD) - Clean Minimalist Design
     function downloadPrintableTicketCard(rName, rAge, sName, barcodeCode) {
         const safeName = rName.replace(/[^a-zA-Z0-9]/g, '_') || 'Ucapan';
         const fileName = `Kartu_Tiket_Ultah_${safeName}.png`;
 
         const canvas = document.createElement('canvas');
-        canvas.width = 650;
-        canvas.height = 940;
+        canvas.width = 600;
+        canvas.height = 780;
         const ctx = canvas.getContext('2d');
 
         ctx.imageSmoothingEnabled = false;
+        
+        // Background pure white
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Border card
-        ctx.strokeStyle = "#ff4757";
-        ctx.lineWidth = 6;
-        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-
-        ctx.strokeStyle = "#ffa502";
+        // Simple, elegant thin outer border
+        ctx.strokeStyle = "#cbd5e1";
         ctx.lineWidth = 2;
-        ctx.strokeRect(28, 28, canvas.width - 56, canvas.height - 56);
+        ctx.strokeRect(24, 24, canvas.width - 48, canvas.height - 48);
 
         // Header Title
-        ctx.fillStyle = "#1a103c";
-        ctx.font = "bold 26px sans-serif";
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 20px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🎁 KARTU TIKET UCAPAN ULANG TAHUN 🎁", canvas.width / 2, 75);
+        ctx.fillText("KARTU UCAPAN ULANG TAHUN", canvas.width / 2, 68);
 
-        ctx.fillStyle = "#ff4757";
-        ctx.font = "bold 22px sans-serif";
-        ctx.fillText(`Spesial Untuk: ${rName}`, canvas.width / 2, 115);
+        // Recipient & Sender Info
+        ctx.fillStyle = "#334155";
+        ctx.font = "600 16px sans-serif";
+        ctx.fillText(`Untuk: ${rName}`, canvas.width / 2, 105);
 
+        let currentY = 130;
         if (rAge) {
-            ctx.fillStyle = "#57606f";
-            ctx.font = "16px sans-serif";
-            ctx.fillText(`${rAge}`, canvas.width / 2, 142);
+            ctx.fillStyle = "#64748b";
+            ctx.font = "14px sans-serif";
+            ctx.fillText(rAge, canvas.width / 2, currentY);
+            currentY += 22;
         }
 
         if (sName) {
-            ctx.fillStyle = "#2e86de";
-            ctx.font = "italic 16px sans-serif";
-            ctx.fillText(`Dari: ${sName}`, canvas.width / 2, 170);
+            ctx.fillStyle = "#64748b";
+            ctx.font = "italic 14px sans-serif";
+            ctx.fillText(`Dari: ${sName}`, canvas.width / 2, currentY);
+            currentY += 22;
         }
 
-        // Horizontal Line
-        ctx.strokeStyle = "#e0e0e0";
+        // Clean thin divider line
+        ctx.strokeStyle = "#e2e8f0";
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(50, 190);
-        ctx.lineTo(canvas.width - 50, 190);
+        ctx.moveTo(50, currentY);
+        ctx.lineTo(canvas.width - 50, currentY);
         ctx.stroke();
 
-        // Labels
-        ctx.fillStyle = "#2f3542";
-        ctx.font = "bold 15px sans-serif";
-        ctx.fillText("PEMINDAI BARCODE 1D (GARIS)", canvas.width / 2, 220);
-        ctx.fillText("PEMINDAI QR CODE 2D (KAMERA HP)", canvas.width / 2, 480);
+        const barcodeY = currentY + 15;
+        const qrY = barcodeY + 185;
+        const footerY = 710;
 
-        // Ticket code footer box
-        ctx.fillStyle = "#f1f2f6";
-        ctx.fillRect(80, 805, canvas.width - 160, 55);
-        ctx.strokeStyle = "#ffa502";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(80, 805, canvas.width - 160, 55);
+        // Bottom Ticket Code Text
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 16px monospace";
+        ctx.fillText(`KODE TIKET: ${barcodeCode}`, canvas.width / 2, footerY);
 
-        ctx.fillStyle = "#1a103c";
-        ctx.font = "bold 20px monospace";
-        ctx.fillText(`KODE TIKET: ${barcodeCode}`, canvas.width / 2, 840);
-
-        ctx.fillStyle = "#747d8c";
-        ctx.font = "13px sans-serif";
-        ctx.fillText("Arahkan Pemindai Barcode / Kamera HP ke Kode di Atas", canvas.width / 2, 885);
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px sans-serif";
+        ctx.fillText("Pindai kode di atas dengan kamera HP / pemindai barcode", canvas.width / 2, footerY + 24);
 
         const svgElem = document.getElementById('barcode1d-svg');
         const qrContainer = elements.qrcodeRender;
@@ -1618,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', () => {
             link.download = fileName;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            showToast("Kartu Tiket Ultah Siap Cetak berhasil diunduh! 📥");
+            showToast("Kartu Tiket Ucapan berhasil diunduh! 📥");
         }
 
         let loadedCount = 0;
@@ -1637,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const svg64 = btoa(unescape(encodeURIComponent(xml)));
                 const b1dImg = new Image();
                 b1dImg.onload = function() {
-                    ctx.drawImage(b1dImg, (canvas.width - 460) / 2, 235, 460, 210);
+                    ctx.drawImage(b1dImg, (canvas.width - 420) / 2, barcodeY, 420, 160);
                     checkFinished();
                 };
                 b1dImg.onerror = function() { checkFinished(); };
@@ -1652,7 +1649,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const qrImg = new Image();
             qrImg.crossOrigin = "anonymous";
             qrImg.onload = function() {
-                ctx.drawImage(qrImg, (canvas.width - 270) / 2, 500, 270, 270);
+                ctx.drawImage(qrImg, (canvas.width - 230) / 2, qrY, 230, 230);
                 checkFinished();
             };
             qrImg.onerror = function() { checkFinished(); };
